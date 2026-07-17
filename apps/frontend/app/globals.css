@@ -668,6 +668,18 @@ button:focus-visible {
   }
 }
 
+/* ── Architecture detail panel ── */
+
+.architecture-detail {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.architecture-detail .border-b {
+  border-color: rgba(174, 219, 255, 0.06);
+}
+
 /* ── Activity ledger panel ── */
 
 .activity-panel {

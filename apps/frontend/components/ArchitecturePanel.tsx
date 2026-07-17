@@ -39,7 +39,7 @@ const cards = [
 
 export function ArchitecturePanel() {
   return (
-    <div className="flex h-full flex-col" style={{ background: "#060d18" }}>
+    <div className="architecture-detail flex h-full flex-col" style={{ background: "#060d18" }}>
       <div className="shrink-0 px-6 py-4 border-b" style={{ borderColor: "rgba(174,219,255,0.06)" }}>
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "rgba(93,232,255,0.1)", border: "1px solid rgba(93,232,255,0.2)" }}>
@@ -76,6 +76,47 @@ export function ArchitecturePanel() {
           </div>
         ))}
       </div>
+
+      <style>{`
+        .architecture-detail .flex { display: flex; }
+        .architecture-detail .flex-col { flex-direction: column; }
+        .architecture-detail .flex-1 { flex: 1; }
+        .architecture-detail .shrink-0 { flex-shrink: 0; }
+        .architecture-detail .items-center { align-items: center; }
+        .architecture-detail .items-baseline { align-items: baseline; }
+        .architecture-detail .justify-center { justify-content: center; }
+        .architecture-detail .justify-between { justify-content: space-between; }
+        .architecture-detail .gap-2\\.5 { gap: 0.625rem; }
+        .architecture-detail .gap-3 { gap: 0.75rem; }
+        .architecture-detail .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .architecture-detail .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+        .architecture-detail .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .architecture-detail .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .architecture-detail .py-2\\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+        .architecture-detail .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .architecture-detail .mt-0\\.5 { margin-top: 0.125rem; }
+        .architecture-detail .ml-auto { margin-left: auto; }
+        .architecture-detail .space-y-2 > * + * { margin-top: 0.5rem; }
+        .architecture-detail .h-full { height: 100%; }
+        .architecture-detail .h-8 { height: 2rem; }
+        .architecture-detail .w-8 { width: 2rem; }
+        .architecture-detail .rounded-xl { border-radius: 0.75rem; }
+        .architecture-detail .rounded-lg { border-radius: 0.5rem; }
+        .architecture-detail .overflow-hidden { overflow: hidden; }
+        .architecture-detail .overflow-y-auto { overflow-y: auto; }
+        .architecture-detail .border-b { border-bottom: 1px solid; }
+        .architecture-detail .divide-y > * + * { border-top: 1px solid rgba(174,219,255,0.04); }
+        .architecture-detail .uppercase { text-transform: uppercase; }
+        .architecture-detail .font-semibold { font-weight: 600; }
+        .architecture-detail .font-medium { font-weight: 500; }
+        .architecture-detail .text-\\[8px\\] { font-size: 0.5rem; }
+        .architecture-detail .text-\\[9px\\] { font-size: 0.5625rem; }
+        .architecture-detail .text-\\[10px\\] { font-size: 0.625rem; }
+        .architecture-detail .text-\\[11px\\] { font-size: 0.688rem; }
+        .architecture-detail .text-\\[13px\\] { font-size: 0.8125rem; }
+        .architecture-detail .tracking-\\[0\\.06em\\] { letter-spacing: 0.06em; }
+        .architecture-detail .tracking-\\[0\\.1em\\] { letter-spacing: 0.1em; }
+      `}</style>
     </div>
   );
 }
