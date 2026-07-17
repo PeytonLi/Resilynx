@@ -235,9 +235,11 @@ export class SmartHealerSession implements AgentSession {
   }
 }
 
-/** Uses Zero through a read-only agent, then validates the returned live payload before registry mutation. */
+/** Uses real Zero.xyz CLI for provider discovery, falls back to static backups.json on error. */
 export class ZeroHealerSession implements AgentSession {
   private readonly registryPath: string;
+  /** Set during run() so the Healer can read the discovery result. */
+  discoveryMessage: string | undefined;
 
   constructor(private readonly zero: ZeroDiscoveryRunner, private readonly fallback?: AgentSession) {
     this.registryPath = configPath("providers.json");
@@ -253,20 +255,27 @@ export class ZeroHealerSession implements AgentSession {
     const failed = entries.find((entry) => entry.id === providerId);
     if (!failed) { callbacks.onTurnEnd(); return; }
 
-    callbacks.onTurnStart("discovering-backup");
+    // Try Zero.xyz discovery
     let candidate: ProviderRegistryEntry;
     try {
+      callbacks.onTurnStart("discovering-backup");
       candidate = await this.zero.discover(failed);
-      if (entries.some((entry) => entry.id === candidate.id)) { callbacks.onTurnEnd(); return; }
-      callbacks.onTurnStart("validating-backup");
-      await this.zero.fetch(candidate);
+      if (entries.some((entry) => entry.id === candidate.id)) {
+        this.discoveryMessage = `Already registered: ${candidate.displayName}`;
+        callbacks.onTurnEnd();
+        return;
+      }
+      this.discoveryMessage = `Discovered: ${candidate.displayName} — ${candidate.endpoint}`;
     } catch (error) {
+      // Zero.xyz failed — fall back to static backups
+      this.discoveryMessage = `Zero.xyz unavailable: ${(error as Error).message}. Falling back to static backups.`;
       if (this.fallback) return this.fallback.run(prompt, callbacks);
-      throw error;
+      callbacks.onTurnEnd();
+      return;
     }
 
     callbacks.onTurnStart("patching-registry");
-    entries.push({ ...candidate, priority: failed.priority + 1, enabled: true });
+    entries.push({ ...candidate, priority: failed.priority + 1, enabled: candidate.enabled });
     const tempPath = `${this.registryPath}.tmp`;
     writeFileSync(tempPath, JSON.stringify(entries, null, 2) + "\n", "utf-8");
     renameSync(tempPath, this.registryPath);

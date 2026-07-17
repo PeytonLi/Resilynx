@@ -6,7 +6,7 @@ const resources: NexlaResourceManifest = { resources: [{ providerId: "coin", sou
 
 describe("NexlaIngestionEngine", () => {
   it("maps a transformed Nexla sample into a reading", async () => {
-    const engine = new NexlaIngestionEngine(registry, resources, async () => ({ samples: [{ metric: "price", value: 42, unit: "USD", timestamp: "2026-01-01T00:00:00Z" }] }));
+    const engine = new NexlaIngestionEngine(registry, resources, { getNexset: async () => ({ samples: [{ metric: "price", value: 42, unit: "USD", timestamp: "2026-01-01T00:00:00Z" }] }) });
     const readings: unknown[] = [];
     engine.on("reading", (reading) => readings.push(reading));
     await engine.pollOnce(registry.getProviders()[0]);
@@ -14,7 +14,7 @@ describe("NexlaIngestionEngine", () => {
   });
 
   it("emits a failure for an untransformed sample", async () => {
-    const engine = new NexlaIngestionEngine(registry, resources, async () => ({ samples: [{ price: 42 }] }));
+    const engine = new NexlaIngestionEngine(registry, resources, { getNexset: async () => ({ samples: [{ price: 42 }] }) });
     const failures: Array<{ errorLog: string }> = [];
     engine.on("failure", (failure) => failures.push(failure));
     await engine.pollOnce(registry.getProviders()[0]);
@@ -25,7 +25,7 @@ describe("NexlaIngestionEngine", () => {
     const zeroProvider = { ...registry.getProviders()[0], id: "zero-coin", authMode: "zeroxyz" as const,
       endpoint: "zero://coin", fieldMapping: { metric: "price", value: "$quote.price", unit: "USD", timestamp: "live" } };
     const zeroRunner = { fetch: async () => ({ quote: { price: 99 } }) };
-    const engine = new NexlaIngestionEngine({ getProviders: () => [zeroProvider] }, { resources: [] }, async () => ({}), zeroRunner);
+    const engine = new NexlaIngestionEngine({ getProviders: () => [zeroProvider] }, { resources: [] }, { getNexset: async () => ({}) }, zeroRunner);
     const readings: Array<{ value: number; unit: string }> = [];
     engine.on("reading", (reading) => readings.push(reading as { value: number; unit: string }));
     await engine.pollOnce(zeroProvider);

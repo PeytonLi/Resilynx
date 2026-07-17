@@ -1,4 +1,16 @@
+/**
+ * Real Zero.xyz integration — calls the `zero` CLI for provider discovery.
+ *
+ * Search + get are free. Fetch costs money per call and is used only for
+ * validation, not during every poll cycle.
+ *
+ * The `zero` CLI must be installed and authenticated (zero auth whoami).
+ */
 import type { ProviderRegistryEntry } from "@resilynx/contracts";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 export interface ZeroCallResult {
   rawPayload: unknown;
@@ -6,156 +18,188 @@ export interface ZeroCallResult {
 }
 
 export interface ZeroRunner {
+  /** Fetch live data from a Zero.xyz-backed provider endpoint. Costs money. */
   fetch(provider: ProviderRegistryEntry): Promise<unknown>;
 }
 
 export interface ZeroDiscoveryRunner extends ZeroRunner {
+  /** Search Zero.xyz for backup providers matching the failed provider's data type. Free. */
   discover(failed: ProviderRegistryEntry): Promise<ProviderRegistryEntry>;
 }
 
-export interface ZeroAgentRunnerOptions {
-  maxPerCallUsd?: number;
-  maxMonthlyUsd?: number;
-  execute?: (prompt: string) => Promise<string>;
+// ---------------------------------------------------------------------------
+// Metric → search query mapping
+// ---------------------------------------------------------------------------
+
+const METRIC_SEARCH_QUERIES: Record<string, string> = {
+  grid_frequency: "real-time power grid frequency data API",
+  temperature: "real-time weather temperature API",
+  earthquake_magnitude: "real-time earthquake seismic data API",
+  carbon_intensity: "real-time carbon intensity emissions API",
+};
+
+function searchQuery(metric: string): string {
+  return METRIC_SEARCH_QUERIES[metric] ?? `real-time ${metric.replace(/_/g, " ")} data API`;
 }
 
-/**
- * Calls Zero through the user's supported Codex setup. Codex is read-only;
- * it returns data and never receives permission to edit the registry.
- */
+// ---------------------------------------------------------------------------
+// CLI helpers
+// ---------------------------------------------------------------------------
+
+const ZERO_CMD = process.env.ZERO_RUNNER ?? "zero";
+
+interface SearchResult {
+  token: string;
+  position: number;
+  slug: string;
+  name: string;
+  canonicalName: string;
+  description: string;
+  url: string;
+  method: string;
+  cost: { amount: string; asset: string };
+  availabilityStatus: string;
+}
+
+interface SearchOutput {
+  capabilities: SearchResult[];
+  total: number;
+}
+
+interface GetOutput {
+  slug: string;
+  name: string;
+  canonicalName: string;
+  description: string;
+  url: string;
+  method: string;
+  bodySchema: unknown;
+  responseSchema: unknown;
+  availabilityStatus: string;
+  displayCostAmount: string;
+  displayCostAsset: string;
+}
+
+interface FetchOutput {
+  runId: string;
+  ok: boolean;
+  status: number;
+  body: unknown;
+  payment?: { amount: string; asset: string };
+}
+
+async function zero(args: string[]): Promise<string> {
+  try {
+    const proc = Bun.spawn([ZERO_CMD, ...args], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [stdout, stderr] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
+    const code = await proc.exited;
+    if (code !== 0) {
+      throw new Error(`zero ${args[0]} failed (exit ${code}): ${stderr || stdout}`);
+    }
+    return stdout;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("zero ")) throw err;
+    throw new Error(`zero ${args[0]} failed: ${(err as Error).message}. Is the Zero CLI installed? (npm install -g @zeroxyz/cli)`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Real Zero.xyz agent runner
+// ---------------------------------------------------------------------------
+
+export interface ZeroAgentRunnerOptions {
+  /** Maximum USD per zero fetch call. Default: 0.05. */
+  maxPerCallUsd?: number;
+  /** Inject a mock for testing. Should accept args array and return stdout JSON. */
+  runZero?: (args: string[]) => Promise<string>;
+}
+
 export class ZeroAgentRunner implements ZeroDiscoveryRunner {
   private readonly maxPerCallUsd: number;
-  private readonly maxMonthlyUsd: number;
-  private spentUsd = 0;
-  private readonly execute: (prompt: string) => Promise<string>;
+  private readonly runZero: (args: string[]) => Promise<string>;
 
   constructor(options: ZeroAgentRunnerOptions = {}) {
     this.maxPerCallUsd = options.maxPerCallUsd ?? Number(process.env.ZERO_MAX_PER_CALL_USD ?? "0.05");
-    this.maxMonthlyUsd = options.maxMonthlyUsd ?? Number(process.env.ZERO_MAX_MONTHLY_USD ?? "5");
-    this.execute = options.execute ?? this.runCodex;
+    this.runZero = options.runZero ?? zero;
   }
 
-  async fetch(provider: ProviderRegistryEntry): Promise<unknown> {
-    const output = await this.execute([
-      "Use the installed Zero capability to fetch one current live-data response.",
-      `Service hint: ${provider.endpoint}`,
-      `Metric: ${provider.fieldMapping.metric ?? provider.id}`,
-      "Return only JSON: {\"rawPayload\": <provider response>, \"perCallCostUsd\": <number>}.",
-      "Refuse the request if Zero cannot show the service price before calling it.",
-    ].join("\n"));
-    const result = parseResult(output);
-    if (!Number.isFinite(result.perCallCostUsd) || result.perCallCostUsd < 0) {
-      throw new Error("Zero call has no valid quoted price");
-    }
-    if (result.perCallCostUsd > this.maxPerCallUsd || this.spentUsd + result.perCallCostUsd > this.maxMonthlyUsd) {
-      throw new Error("Zero call exceeds configured budget");
-    }
-    this.spentUsd += result.perCallCostUsd;
-    return result.rawPayload;
-  }
+  // -------------------------------------------------------------------
+  // discover — search Zero.xyz for backup providers (FREE)
+  // -------------------------------------------------------------------
 
   async discover(failed: ProviderRegistryEntry): Promise<ProviderRegistryEntry> {
-    const output = await this.execute([
-      "Use the installed Zero capability to discover one priced live-data service that replaces this failed source.",
-      `Metric: ${failed.fieldMapping.metric ?? failed.id}`,
-      "Return only JSON: {\"id\": string, \"displayName\": string, \"serviceHint\": string, \"fieldMapping\": object, \"perCallCostUsd\": number}.",
-      "The field mapping must use $ prefixes for payload paths. Refuse services without a visible price.",
-    ].join("\n"));
-    const result = parseDiscovery(output);
-    if (!Number.isFinite(result.perCallCostUsd) || result.perCallCostUsd < 0 || result.perCallCostUsd > this.maxPerCallUsd) {
-      throw new Error("Zero discovery exceeds configured budget");
+    const metric = failed.fieldMapping?.metric ?? failed.id;
+    const query = searchQuery(metric);
+
+    // Step 1: search
+    const searchRaw = await this.runZero(["search", query, "--json"]);
+    const searchOutput: SearchOutput = JSON.parse(searchRaw);
+
+    if (!searchOutput.capabilities?.length) {
+      throw new Error(`Zero.xyz returned no results for: ${query}`);
     }
+
+    // Filter to healthy GET endpoints
+    const candidates = searchOutput.capabilities.filter(
+      (c) => c.availabilityStatus === "healthy" && c.method === "GET",
+    );
+    if (!candidates.length) {
+      throw new Error(`Zero.xyz found ${searchOutput.capabilities.length} results but none are healthy GET endpoints for: ${query}`);
+    }
+
+    // Pick the first healthy candidate
+    const best = candidates[0];
+
+    // Step 2: get endpoint details (FREE)
+    const getRaw = await this.runZero(["get", best.token]);
+    const details: GetOutput = JSON.parse(getRaw);
+
+    // Step 3: construct registry entry
+    const costUsd = parseFloat(details.displayCostAmount || best.cost.amount || "0.05");
+    if (!Number.isFinite(costUsd) || costUsd > this.maxPerCallUsd) {
+      throw new Error(`Zero.xyz backup ${details.name} costs $${costUsd}/call, exceeds max $${this.maxPerCallUsd}`);
+    }
+
     return {
-      id: result.id,
-      displayName: result.displayName,
-      endpoint: `zero://${result.serviceHint}`,
+      id: `${failed.id}-zero-backup`,
+      displayName: `${details.canonicalName || details.name} (Zero.xyz)`,
+      endpoint: details.url,
       authMode: "zeroxyz",
       pollIntervalMs: 300_000,
-      fieldMapping: result.fieldMapping,
+      fieldMapping: {
+        metric: metric,
+        value: "$value",
+        unit: "$unit",
+        timestamp: "$timestamp",
+      },
       priority: failed.priority + 1,
-      enabled: true,
+      enabled: false, // Don't auto-poll — costs money. User can enable manually.
     };
   }
 
-  private async runCodex(prompt: string): Promise<string> {
-    const child = Bun.spawn([
-      "codex", "exec", "--json", "--ephemeral", "--sandbox", "read-only", "--cd", process.cwd(), prompt,
-    ], { stdout: "pipe", stderr: "pipe" });
-    const [stdout, stderr, code] = await Promise.all([
-      new Response(child.stdout).text(),
-      new Response(child.stderr).text(),
-      child.exited,
+  // -------------------------------------------------------------------
+  // fetch — call a Zero.xyz-backed API (COSTS MONEY)
+  // -------------------------------------------------------------------
+
+  async fetch(provider: ProviderRegistryEntry): Promise<unknown> {
+    const fetchRaw = await this.runZero([
+      "fetch",
+      provider.endpoint,
+      "--json",
+      `--max-pay`, String(this.maxPerCallUsd),
     ]);
-    if (code !== 0) throw new Error(`Codex/Zero worker failed: ${stderr || stdout}`);
-    return stdout;
-  }
-}
+    const result: FetchOutput = JSON.parse(fetchRaw);
 
-interface ZeroDiscoveryResult {
-  id: string;
-  displayName: string;
-  serviceHint: string;
-  fieldMapping: Record<string, string>;
-  perCallCostUsd: number;
-}
-
-function parseResult(output: string): ZeroCallResult {
-  const candidates = [output, ...output.split(/\r?\n/).reverse()];
-  for (const candidate of candidates) {
-    try {
-      const parsed = JSON.parse(candidate) as unknown;
-      const result = findResult(parsed);
-      if (result) return result;
-    } catch { /* try the next JSONL event */ }
-  }
-  throw new Error("Codex/Zero worker did not return the required JSON result");
-}
-
-function findResult(value: unknown): ZeroCallResult | undefined {
-  if (!value || typeof value !== "object") {
-    if (typeof value === "string") {
-      try { return findResult(JSON.parse(value)); } catch { return undefined; }
+    if (!result.ok) {
+      throw new Error(`Zero.xyz fetch returned status ${result.status}`);
     }
-    return undefined;
-  }
-  const record = value as Record<string, unknown>;
-  if ("rawPayload" in record && typeof record.perCallCostUsd === "number") {
-    return { rawPayload: record.rawPayload, perCallCostUsd: record.perCallCostUsd };
-  }
-  for (const nested of Object.values(record)) {
-    const result = findResult(nested);
-    if (result) return result;
-  }
-  return undefined;
-}
 
-function parseDiscovery(output: string): ZeroDiscoveryResult {
-  const candidates = [output, ...output.split(/\r?\n/).reverse()];
-  for (const candidate of candidates) {
-    try {
-      const found = findDiscovery(JSON.parse(candidate));
-      if (found) return found;
-    } catch { /* try the next JSONL event */ }
+    return result.body;
   }
-  throw new Error("Codex/Zero worker did not return a provider discovery result");
-}
-
-function findDiscovery(value: unknown): ZeroDiscoveryResult | undefined {
-  if (!value || typeof value !== "object") {
-    if (typeof value === "string") {
-      try { return findDiscovery(JSON.parse(value)); } catch { return undefined; }
-    }
-    return undefined;
-  }
-  const record = value as Record<string, unknown>;
-  if (typeof record.id === "string" && typeof record.displayName === "string" && typeof record.serviceHint === "string" &&
-    typeof record.perCallCostUsd === "number" && record.fieldMapping && typeof record.fieldMapping === "object") {
-    return { id: record.id, displayName: record.displayName, serviceHint: record.serviceHint,
-      fieldMapping: record.fieldMapping as Record<string, string>, perCallCostUsd: record.perCallCostUsd };
-  }
-  for (const nested of Object.values(record)) {
-    const result = findDiscovery(nested);
-    if (result) return result;
-  }
-  return undefined;
 }

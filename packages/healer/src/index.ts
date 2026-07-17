@@ -19,10 +19,11 @@ import type {
   WsPayload,
 } from "@resilynx/contracts";
 import {
-  SimulatedAgentSession,
+  ZeroHealerSession,
   SmartHealerSession,
   type AgentSession,
 } from "./agent";
+import { ZeroAgentRunner } from "./zero";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -106,7 +107,7 @@ export class Healer extends EventEmitter {
 
   constructor(agent?: AgentSession) {
     super();
-    this.agent = agent ?? new SmartHealerSession();
+    this.agent = agent ?? new ZeroHealerSession(new ZeroAgentRunner(), new SmartHealerSession());
   }
 
   /**
@@ -135,13 +136,21 @@ export class Healer extends EventEmitter {
             wsPayload("healing", { agentState: state }),
           );
         },
-        onTurnEnd: () => {
-          // terminal — nothing extra to emit here; `restored` fires below.
-        },
+        onTurnEnd: () => {},
       });
+
+      // After agent completes, surface any discovery message
+      if ("discoveryMessage" in this.agent) {
+        const msg = (this.agent as { discoveryMessage?: string }).discoveryMessage;
+        if (msg) {
+          this.emit(
+            "agent-activity",
+            wsPayload("healing", { agentState: "discovery-result", message: msg }),
+          );
+        }
+      }
     } catch {
-      // Agent session crashed — `restored` still fires in `finally` so the
-      // backend can transition off the healing state.
+      // Agent session crashed — `restored` still fires in `finally`.
     } finally {
       // 4. Always signal completion so the backend can transition.
       this.emit(

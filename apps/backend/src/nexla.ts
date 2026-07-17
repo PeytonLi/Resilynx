@@ -17,11 +17,6 @@ export interface NexlaResourceManifest {
 }
 
 const DEFAULT_MANIFEST_PATH = path.resolve(import.meta.dir, "../../../config/nexla-resources.json");
-const WINDOWS_CLI_PATH = path.join(process.env.APPDATA ?? "", "npm", "node_modules", "@nexla", "nexla-cli", "bin", "nexla-bin.exe");
-
-function nexlaCliPath(): string {
-  return process.env.NEXLA_CLI_PATH ?? (process.platform === "win32" && existsSync(WINDOWS_CLI_PATH) ? WINDOWS_CLI_PATH : "nexla-cli");
-}
 
 export function loadNexlaResources(filePath = process.env.NEXLA_RESOURCES_PATH ?? DEFAULT_MANIFEST_PATH): NexlaResourceManifest {
   if (!process.env.NEXLA_API_URL || !process.env.NEXLA_TOKEN) {
@@ -37,14 +32,30 @@ export function loadNexlaResources(filePath = process.env.NEXLA_RESOURCES_PATH ?
   return manifest;
 }
 
-export type CliRunner = (args: string[]) => Promise<unknown>;
+export interface NexlaApi {
+  getNexset(nexsetId: number): Promise<unknown>;
+}
 
-export const runNexlaCli: CliRunner = async (args) => {
-  const process = Bun.spawn([nexlaCliPath(), "--output", "json", ...args], { stdout: "pipe", stderr: "pipe" });
-  const [exitCode, stdout, stderr] = await Promise.all([process.exited, new Response(process.stdout).text(), new Response(process.stderr).text()]);
-  if (exitCode !== 0) throw new Error(stderr.trim() || `nexla-cli exited ${exitCode}`);
-  return JSON.parse(stdout) as unknown;
-};
+export class NexlaApiClient implements NexlaApi {
+  private readonly baseUrl: string;
+
+  constructor(
+    apiUrl = process.env.NEXLA_API_URL,
+    private readonly token = process.env.NEXLA_TOKEN,
+    private readonly fetchImpl: typeof fetch = fetch,
+  ) {
+    if (!apiUrl || !token) throw new Error("NEXLA_API_URL and NEXLA_TOKEN are required");
+    this.baseUrl = apiUrl.replace(/\/$/, "");
+  }
+
+  async getNexset(nexsetId: number): Promise<unknown> {
+    const response = await this.fetchImpl(`${this.baseUrl}/nexla/nexsets/${nexsetId}`, {
+      headers: { authorization: `Bearer ${this.token}` },
+    });
+    if (!response.ok) throw new Error(`Nexla API returned ${response.status}`);
+    return response.json();
+  }
+}
 
 function recordsFromResult(result: unknown): Record<string, unknown>[] {
   if (Array.isArray(result)) return result.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null);
@@ -70,7 +81,7 @@ export class NexlaIngestionEngine extends EventEmitter {
   constructor(
     private readonly registry: RegistrySource,
     private readonly resources: NexlaResourceManifest,
-    private readonly cli: CliRunner = runNexlaCli,
+    private readonly api: NexlaApi = new NexlaApiClient(),
     private readonly zeroRunner?: ZeroRunner,
   ) { super(); }
 
@@ -106,7 +117,7 @@ export class NexlaIngestionEngine extends EventEmitter {
 
   private async poll(provider: ProviderRegistryEntry, resource: NexlaResource): Promise<void> {
     try {
-      const result = await this.cli(["nexsets", "get", String(resource.nexsetId)]);
+      const result = await this.api.getNexset(resource.nexsetId);
       const sample = recordsFromResult(result).at(-1);
       if (!sample) throw new Error("Nexla Nexset has no samples yet");
       this.emit("reading", toNexsetRecord(provider.id, sample));
