@@ -1,47 +1,67 @@
 import type { ProviderRegistryEntry } from "@resilynx/contracts";
 
-export const providers: ProviderRegistryEntry[] = [
+const fallbackProviders: ProviderRegistryEntry[] = [
   {
-    id: "uk-carbon-intensity",
-    displayName: "UK Carbon Intensity API",
-    endpoint: "https://api.carbonintensity.org.uk/intensity",
+    id: "coingecko",
+    displayName: "CoinGecko (Crypto Prices)",
+    endpoint: "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
     authMode: "none",
     pollIntervalMs: 30000,
     fieldMapping: {
-      value: "data[0].intensity.actual",
-      unit: "gCO2/kWh",
-      timestamp: "data[0].from",
+      metric: "crypto_price",
+      value: "bitcoin.usd",
+      unit: "USD",
+      timestamp: "bitcoin.usd",
     },
     priority: 1,
     enabled: true,
   },
   {
-    id: "open-meteo",
-    displayName: "Open-Meteo Current Weather",
-    endpoint:
-      "https://api.open-meteo.com/v1/forecast?latitude=37.87&longitude=-122.26&current=temperature_2m",
+    id: "exchangerate",
+    displayName: "ExchangeRate-API (Forex Rates)",
+    endpoint: "https://open.er-api.com/v6/latest/USD",
     authMode: "none",
     pollIntervalMs: 30000,
     fieldMapping: {
-      value: "current.temperature_2m",
-      unit: "celsius",
-      timestamp: "current.time",
+      metric: "forex_rate",
+      value: "rates.EUR",
+      unit: "EUR",
+      timestamp: "time_last_update_utc",
     },
     priority: 2,
     enabled: true,
   },
   {
-    id: "mock-carbon-registry",
-    displayName: "Mock Carbon Registry",
+    id: "mock-exchange",
+    displayName: "Mock Financial Exchange",
     endpoint: "http://localhost:4001/data",
     authMode: "none",
     pollIntervalMs: 15000,
     fieldMapping: {
-      value: "reading.value",
-      unit: "reading.unit",
-      timestamp: "reading.ts",
+      metric: "stock_price",
+      value: "price",
+      unit: "currency",
+      timestamp: "ts",
     },
     priority: 3,
     enabled: true,
   },
 ];
+
+/**
+ * Fetch the live provider registry from the backend.
+ * Falls back to the hardcoded list if the backend is unreachable
+ * (e.g. during SSR or before the backend starts).
+ */
+export async function fetchProviders(): Promise<ProviderRegistryEntry[]> {
+  try {
+    const res = await fetch("http://localhost:8080/providers");
+    if (res.ok) return res.json();
+  } catch {
+    // Backend not reachable — use fallback
+  }
+  return fallbackProviders;
+}
+
+/** Synchronous fallback for components that can't await. */
+export const providers: ProviderRegistryEntry[] = fallbackProviders;

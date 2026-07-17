@@ -1,29 +1,26 @@
 /**
- * Killable mock provider — serves a scripted carbon-registry payload in a
+ * Killable mock provider — serves a scripted financial-exchange payload in a
  * schema deliberately different from the real APIs, to prove out
  * standardization. POST /kill makes subsequent GET /data return 503;
  * POST /revive restores it.
  */
 import { PORTS } from "@resilynx/contracts";
 
-/** Values cycle through plausible carbon-offset readings for demo motion. */
-const CARBON_VALUES = [215, 198, 237, 182, 250, 203, 220, 189, 245, 210, 195, 260, 178, 232, 207];
-const UNITS = ["gCO2eq/kWh", "kgCO2/MWh", "tCO2/GWh", "gCO2eq/kWh", "kgCO2/MWh",
-  "tCO2/GWh", "gCO2eq/kWh", "kgCO2/MWh", "tCO2/GWh", "gCO2eq/kWh",
-  "kgCO2/MWh", "tCO2/GWh", "gCO2eq/kWh", "kgCO2/MWh", "tCO2/GWh"];
+const TICKERS = ["MOCK", "ALPHA", "BETA", "GAMMA"];
+const PRICES = [215.5, 198.3, 227.1, 203.7, 241.2];
 
 let killed = false;
 let cycleIdx = 0;
 
-function makePayload(): { reading: { value: number; unit: string; ts: string } } {
-  const idx = cycleIdx % CARBON_VALUES.length;
+function makePayload(): { ticker: string; price: number; currency: string; ts: string } {
+  const ticker = TICKERS[cycleIdx % TICKERS.length];
+  const price = PRICES[cycleIdx % PRICES.length];
   cycleIdx++;
   return {
-    reading: {
-      value: CARBON_VALUES[idx],
-      unit: UNITS[idx],
-      ts: new Date().toISOString(),
-    },
+    ticker,
+    price,
+    currency: "USD",
+    ts: new Date().toISOString(),
   };
 }
 

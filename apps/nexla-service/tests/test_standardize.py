@@ -72,58 +72,45 @@ class TestDotPathResolver:
         assert extract_value(payload, "wrapper.ts") == "2024-01-01T00:00:00Z"
 
 
-# ── Golden tests: UK Carbon Intensity ─────────────────────────────────────────
+# ── Golden tests: CoinGecko ────────────────────────────────────────────────────
 
 
-class TestUkCarbonIntensity:
+class TestCoinGecko:
     def test_golden_standardizes_correctly(self):
-        raw = {
-            "data": [
-                {
-                    "from": "2024-07-17T10:00Z",
-                    "to": "2024-07-17T10:30Z",
-                    "intensity": {
-                        "forecast": 220,
-                        "actual": 235,
-                        "index": "moderate",
-                    },
-                }
-            ]
-        }
+        raw = {"bitcoin": {"usd": 63865}}
         response = client.post(
             "/standardize",
             json={
-                "providerId": "uk-carbon-intensity",
-                "metric": "carbon_intensity",
+                "providerId": "coingecko",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "data[0].intensity.actual",
-                    "unit": "gCO2/kWh",
-                    "timestamp": "data[0].from",
+                    "metric": "crypto_price",
+                    "value": "bitcoin.usd",
+                    "unit": "USD",
+                    "timestamp": "live",
                 },
             },
         )
         assert response.status_code == 200
         record = response.json()
-        assert record["providerId"] == "uk-carbon-intensity"
-        assert record["metric"] == "carbon_intensity"
-        assert record["value"] == 235.0
-        assert record["unit"] == "gCO2/kWh"
-        assert record["timestamp"] == "2024-07-17T10:00Z"
+        assert record["providerId"] == "coingecko"
+        assert record["metric"] == "crypto_price"
+        assert record["value"] == 63865.0
+        assert record["unit"] == "USD"
         assert record["raw"] == raw
 
-    def test_missing_data_field_returns_error(self):
-        raw = {"data": []}
+    def test_missing_bitcoin_usd_key_returns_error(self):
+        raw = {"bitcoin": {}}
         response = client.post(
             "/standardize",
             json={
-                "providerId": "uk-carbon-intensity",
-                "metric": "carbon_intensity",
+                "providerId": "coingecko",
+                "metric": "crypto_price",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "data[0].intensity.actual",
-                    "unit": "gCO2/kWh",
-                    "timestamp": "data[0].from",
+                    "value": "bitcoin.usd",
+                    "unit": "USD",
+                    "timestamp": "live",
                 },
             },
         )
@@ -132,25 +119,18 @@ class TestUkCarbonIntensity:
         assert body["error"] == "Field resolution failed"
         assert "value" in body["detail"]
 
-    def test_wrong_value_type_returns_error(self):
-        raw = {
-            "data": [
-                {
-                    "from": "2024-07-17T10:00Z",
-                    "intensity": {"actual": "not_a_number"},
-                }
-            ]
-        }
+    def test_non_numeric_price_returns_error(self):
+        raw = {"bitcoin": {"usd": "not_a_number"}}
         response = client.post(
             "/standardize",
             json={
-                "providerId": "uk-carbon-intensity",
-                "metric": "carbon_intensity",
+                "providerId": "coingecko",
+                "metric": "crypto_price",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "data[0].intensity.actual",
-                    "unit": "gCO2/kWh",
-                    "timestamp": "data[0].from",
+                    "value": "bitcoin.usd",
+                    "unit": "USD",
+                    "timestamp": "live",
                 },
             },
         )
@@ -159,54 +139,46 @@ class TestUkCarbonIntensity:
         assert body["error"] == "Invalid value type"
 
 
-# ── Golden tests: Open-Meteo ──────────────────────────────────────────────────
+# ── Golden tests: ExchangeRate-API ─────────────────────────────────────────────
 
 
-class TestOpenMeteo:
+class TestExchangeRate:
     def test_golden_standardizes_correctly(self):
-        raw = {
-            "latitude": 37.87,
-            "longitude": -122.26,
-            "current": {
-                "time": "2024-07-17T10:00",
-                "temperature_2m": 22.3,
-                "relative_humidity_2m": 65,
-            },
-        }
+        raw = {"data": {"rates": {"EUR": 0.92}, "time_last_update_utc": "Fri, 17 Jul 2026 00:02:31 +0000"}}
         response = client.post(
             "/standardize",
             json={
-                "providerId": "open-meteo",
-                "metric": "temperature",
+                "providerId": "exchangerate",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "current.temperature_2m",
-                    "unit": "celsius",
-                    "timestamp": "current.time",
+                    "metric": "forex_rate",
+                    "value": "data.rates.EUR",
+                    "unit": "EUR",
+                    "timestamp": "data.time_last_update_utc",
                 },
             },
         )
         assert response.status_code == 200
         record = response.json()
-        assert record["providerId"] == "open-meteo"
-        assert record["metric"] == "temperature"
-        assert record["value"] == 22.3
-        assert record["unit"] == "celsius"
-        assert record["timestamp"] == "2024-07-17T10:00"
+        assert record["providerId"] == "exchangerate"
+        assert record["metric"] == "forex_rate"
+        assert record["value"] == 0.92
+        assert record["unit"] == "EUR"
+        assert record["timestamp"] == "Fri, 17 Jul 2026 00:02:31 +0000"
         assert record["raw"] == raw
 
-    def test_missing_current_field_returns_error(self):
-        raw = {"latitude": 37.87}
+    def test_missing_eur_key_returns_error(self):
+        raw = {"data": {"rates": {}, "time_last_update_utc": "Fri, 17 Jul 2026 00:02:31 +0000"}}
         response = client.post(
             "/standardize",
             json={
-                "providerId": "open-meteo",
-                "metric": "temperature",
+                "providerId": "exchangerate",
+                "metric": "forex_rate",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "current.temperature_2m",
-                    "unit": "celsius",
-                    "timestamp": "current.time",
+                    "value": "data.rates.EUR",
+                    "unit": "EUR",
+                    "timestamp": "data.time_last_update_utc",
                 },
             },
         )
@@ -215,23 +187,18 @@ class TestOpenMeteo:
         assert body["error"] == "Field resolution failed"
         assert "value" in body["detail"]
 
-    def test_zero_temperature_still_valid(self):
-        raw = {
-            "current": {
-                "time": "2024-07-17T10:00",
-                "temperature_2m": 0.0,
-            }
-        }
+    def test_zero_rate_still_valid(self):
+        raw = {"data": {"rates": {"EUR": 0.0}, "time_last_update_utc": "Fri, 17 Jul 2026 00:02:31 +0000"}}
         response = client.post(
             "/standardize",
             json={
-                "providerId": "open-meteo",
-                "metric": "temperature",
+                "providerId": "exchangerate",
+                "metric": "forex_rate",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "current.temperature_2m",
-                    "unit": "celsius",
-                    "timestamp": "current.time",
+                    "value": "data.rates.EUR",
+                    "unit": "EUR",
+                    "timestamp": "data.time_last_update_utc",
                 },
             },
         )
@@ -239,78 +206,66 @@ class TestOpenMeteo:
         assert response.json()["value"] == 0.0
 
 
-# ── Golden tests: Mock Carbon Registry ────────────────────────────────────────
+# ── Golden tests: Mock Exchange ────────────────────────────────────────────────
 
 
-class TestMockCarbonRegistry:
+class TestMockExchange:
     def test_golden_standardizes_correctly(self):
-        raw = {
-            "reading": {
-                "value": 42.7,
-                "unit": "tCO2e",
-                "ts": "2024-07-17T10:00:00Z",
-                "source": "mock-verifier-01",
-            }
-        }
+        raw = {"stock": {"ticker": "MOCK", "price": 215.5, "currency": "USD", "ts": "2026-07-17T18:00:00Z"}}
         response = client.post(
             "/standardize",
             json={
-                "providerId": "mock-carbon-registry",
-                "metric": "carbon_offset",
+                "providerId": "mock-exchange",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "reading.value",
-                    "unit": "reading.unit",
-                    "timestamp": "reading.ts",
+                    "metric": "stock_price",
+                    "value": "stock.price",
+                    "unit": "stock.currency",
+                    "timestamp": "stock.ts",
                 },
             },
         )
         assert response.status_code == 200
         record = response.json()
-        assert record["providerId"] == "mock-carbon-registry"
-        assert record["metric"] == "carbon_offset"
-        assert record["value"] == 42.7
-        assert record["unit"] == "tCO2e"
-        assert record["timestamp"] == "2024-07-17T10:00:00Z"
+        assert record["providerId"] == "mock-exchange"
+        assert record["metric"] == "stock_price"
+        assert record["value"] == 215.5
+        assert record["unit"] == "USD"
+        assert record["timestamp"] == "2026-07-17T18:00:00Z"
         assert record["raw"] == raw
 
-    def test_missing_reading_field_returns_error(self):
-        raw = {}
+    def test_missing_price_key_returns_error(self):
+        raw = {"stock": {"ticker": "MOCK", "currency": "USD", "ts": "2026-07-17T18:00:00Z"}}
         response = client.post(
             "/standardize",
             json={
-                "providerId": "mock-carbon-registry",
-                "metric": "carbon_offset",
+                "providerId": "mock-exchange",
+                "metric": "stock_price",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "reading.value",
-                    "unit": "reading.unit",
-                    "timestamp": "reading.ts",
+                    "value": "stock.price",
+                    "unit": "stock.currency",
+                    "timestamp": "stock.ts",
                 },
             },
         )
         assert response.status_code == 400
         body = response.json()
         assert body["error"] == "Field resolution failed"
+        assert "value" in body["detail"]
 
-    def test_negative_value_still_valid(self):
-        raw = {
-            "reading": {
-                "value": -10.5,
-                "unit": "tCO2e",
-                "ts": "2024-07-17T10:00:00Z",
-            }
-        }
+    def test_negative_price_still_valid(self):
+        raw = {"stock": {"ticker": "MOCK", "price": -10.5, "currency": "USD", "ts": "2026-07-17T18:00:00Z"}}
         response = client.post(
             "/standardize",
             json={
-                "providerId": "mock-carbon-registry",
-                "metric": "carbon_offset",
+                "providerId": "mock-exchange",
+                "metric": "stock_price",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "reading.value",
-                    "unit": "reading.unit",
-                    "timestamp": "reading.ts",
+                    "value": "stock.price",
+                    "unit": "stock.currency",
+                    "timestamp": "stock.ts",
                 },
             },
         )

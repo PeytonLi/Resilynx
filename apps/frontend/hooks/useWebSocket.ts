@@ -16,11 +16,15 @@ export function useWebSocket() {
     new Map(),
   );
   const [connected, setConnected] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const mountedRef = useRef(true);
   const retryCountRef = useRef(0);
   const maxRetryMs = 30000;
 
   const connect = useCallback(() => {
     const ws = new WebSocket("ws://localhost:8080/ws");
+    wsRef.current = ws;
 
     ws.onopen = () => {
       setConnected(true);
@@ -48,12 +52,13 @@ export function useWebSocket() {
 
     ws.onclose = () => {
       setConnected(false);
+      if (!mountedRef.current) return;
       const delay = Math.min(
         1000 * Math.pow(2, retryCountRef.current),
         maxRetryMs,
       );
       retryCountRef.current += 1;
-      setTimeout(connect, delay);
+      reconnectTimerRef.current = setTimeout(connect, delay);
     };
 
     ws.onerror = () => {
@@ -64,8 +69,12 @@ export function useWebSocket() {
   useEffect(() => {
     connect();
     return () => {
-      // Cleanup impossible on stale closure, but the effect cleanup
-      // runs once on unmount — the reference may be stale; we accept that.
+      mountedRef.current = false;
+      if (reconnectTimerRef.current !== null) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      wsRef.current?.close();
     };
   }, [connect]);
 

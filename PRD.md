@@ -54,7 +54,7 @@ For a demo, the operator can kill a controlled mock provider on demand and watch
 - **NetworkCanvas** (Three.js) — spatial WebGL model of the provider graph; node materials react to status (green stable, yellow/red degraded-failing, new green node + edge on restore).
 - **Mock Provider** — a small killable HTTP server in the monorepo with a kill/revive switch, emitting realistic-but-scripted payloads in a schema different from the real APIs (to prove standardization).
 
-**Data sources** — two real, keyless public APIs (candidates: UK Carbon Intensity API and Open-Meteo; final pick at implementation) plus the mock provider. Backup providers for failover are discovered via Zero.xyz at heal time.
+**Data sources** — two real, keyless public APIs (CoinGecko for crypto prices and ExchangeRate-API for forex rates) plus a mock financial exchange with a kill switch. Backup providers for failover are discovered via Zero.xyz at heal time.
 
 **AI stack** — Pi Agent (headless, native SDK embedding, surgical file-editing tools); DeepSeek V3 for rapid patch generation, DeepSeek R1 for architectural reasoning; Zero.xyz for zero-configuration access to backup APIs.
 

@@ -119,9 +119,7 @@ export function NetworkCanvas({ providers, networkStatus }: Props) {
 
     /* ---- labels (sprite text) ---- */
     const labelSprites: THREE.Sprite[] = [];
-    providers.forEach((p) => {
-      const mesh = nodeMeshes.get(p.id);
-      if (!mesh) return;
+    const createLabel = (text: string, position: THREE.Vector3) => {
       const canvas2d = document.createElement("canvas");
       canvas2d.width = 256;
       canvas2d.height = 64;
@@ -129,16 +127,51 @@ export function NetworkCanvas({ providers, networkStatus }: Props) {
       ctx.fillStyle = "#94a3b8";
       ctx.font = "20px system-ui, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(p.displayName, 128, 32);
+      ctx.fillText(text, 128, 32);
       const tex = new THREE.CanvasTexture(canvas2d);
       tex.minFilter = THREE.LinearFilter;
       const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
       const sprite = new THREE.Sprite(spriteMat);
-      sprite.position.copy(mesh.position).add(new THREE.Vector3(0, 0.55, 0));
+      sprite.position.copy(position).add(new THREE.Vector3(0, 0.55, 0));
       sprite.scale.set(2.5, 0.625, 1);
       scene.add(sprite);
+      return sprite;
+    };
+    providers.forEach((p) => {
+      const mesh = nodeMeshes.get(p.id);
+      if (!mesh) return;
+      const sprite = createLabel(p.displayName, mesh.position);
       labelSprites.push(sprite);
     });
+
+    /* ---- dynamic edges & labels for restored nodes ---- */
+    const dynamicEdges: THREE.Line[] = [];
+    const dynamicLabels: THREE.Sprite[] = [];
+    const createDashedEdge = (from: THREE.Vector3, to: THREE.Vector3) => {
+      const geo = new THREE.BufferGeometry().setFromPoints([from, to]);
+      const mat = new THREE.LineDashedMaterial({
+        color: STATUS_COLOR.restored,
+        dashSize: 0.3,
+        gapSize: 0.15,
+        linewidth: 1,
+        transparent: true,
+        opacity: 0.7,
+      });
+      const line = new THREE.Line(geo, mat);
+      line.computeLineDistances();
+      scene.add(line);
+      return line;
+    };
+    const findNearestNode = (pos: THREE.Vector3, excludeId: string): THREE.Mesh | null => {
+      let bestDist = Infinity;
+      let bestMesh: THREE.Mesh | null = null;
+      nodeMeshes.forEach((m, id) => {
+        if (id === excludeId) return;
+        const d = m.position.distanceToSquared(pos);
+        if (d < bestDist) { bestDist = d; bestMesh = m; }
+      });
+      return bestMesh;
+    };
 
     /* ---- resize ---- */
     const resize = () => {
@@ -178,6 +211,26 @@ export function NetworkCanvas({ providers, networkStatus }: Props) {
           const mesh = createSphere(nodeId, x, z, STATUS_COLOR.restored, 0.01);
           mesh.userData.scaleIn = true;
           mesh.userData.startTime = t;
+
+          /* label */
+          const labelText = nodeId.length > 8 ? nodeId.slice(0, 8) + "\u2026" : nodeId;
+          const sprite = createLabel(labelText, mesh.position.clone());
+          dynamicLabels.push(sprite);
+          mesh.userData.labelSprite = sprite;
+
+          /* target on the circle */
+          const targetAngle = (nextFreeAngle - 1) * Math.PI * 2 * 0.618;
+          const tx = Math.cos(targetAngle) * radius;
+          const tz = Math.sin(targetAngle) * radius;
+          mesh.userData.targetPos = new THREE.Vector3(tx, 0, tz);
+
+          /* dashed edge to nearest existing node */
+          const nearest = findNearestNode(mesh.position, nodeId);
+          if (nearest) {
+            const edge = createDashedEdge(mesh.position.clone(), nearest.position.clone());
+            dynamicEdges.push(edge);
+            mesh.userData.dynamicEdge = edge;
+          }
         }
       });
 
@@ -207,7 +260,7 @@ export function NetworkCanvas({ providers, networkStatus }: Props) {
           }
         }
 
-        /* scale-in for restored nodes */
+        /* scale-in + position animation for restored nodes */
         if (mesh.userData.scaleIn) {
           const elapsed = t - (mesh.userData.startTime as number);
           const target = 1;
@@ -216,6 +269,26 @@ export function NetworkCanvas({ providers, networkStatus }: Props) {
             0.01 + (target - 0.01) * (1 - Math.exp(-elapsed * 3)),
           );
           mesh.scale.setScalar(eased);
+
+          /* animate position toward circle target */
+          const targetPos = mesh.userData.targetPos as THREE.Vector3 | undefined;
+          if (targetPos) {
+            mesh.position.lerp(targetPos, 0.08);
+            /* sync label */
+            const sprite = mesh.userData.labelSprite as THREE.Sprite | undefined;
+            if (sprite) {
+              sprite.position.copy(mesh.position).add(new THREE.Vector3(0, 0.55, 0));
+            }
+            /* sync edge */
+            const edge = mesh.userData.dynamicEdge as THREE.Line | undefined;
+            if (edge) {
+              const posAttr = edge.geometry.getAttribute("position") as THREE.BufferAttribute;
+              posAttr.setXYZ(0, mesh.position.x, mesh.position.y, mesh.position.z);
+              posAttr.needsUpdate = true;
+              edge.computeLineDistances();
+            }
+          }
+
           if (eased >= 0.99) {
             mesh.userData.scaleIn = false;
           }
@@ -239,6 +312,14 @@ export function NetworkCanvas({ providers, networkStatus }: Props) {
       labelSprites.forEach((s) => {
         s.material.dispose();
         (s.material as THREE.SpriteMaterial).map?.dispose();
+      });
+      dynamicLabels.forEach((s) => {
+        s.material.dispose();
+        (s.material as THREE.SpriteMaterial).map?.dispose();
+      });
+      dynamicEdges.forEach((e) => {
+        e.geometry.dispose();
+        (e.material as THREE.Material).dispose();
       });
       lineGeo.dispose();
       lineMat.dispose();

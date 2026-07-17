@@ -35,11 +35,6 @@ if (import.meta.main) {
   const ingestion = new IngestionEngine(registry);
   const healthMonitor = new HealthMonitor(healer);
 
-  const broadcast = (payload: WsPayload): void => {
-    publish(server, payload);
-    store.insertEvent(payload);
-  };
-
   const server = Bun.serve({
     port: PORTS.backend,
     fetch(req, srv) {
@@ -51,6 +46,12 @@ if (import.meta.main) {
     },
     websocket: websocketHandlers,
   });
+
+  const broadcast = (payload: WsPayload): void => {
+    publish(server, payload);
+    store.insertEvent(payload);
+  };
+
 
   // Hot-reload: restart poll loops so registry edits take effect without a process restart.
   registry.on("change", () => {
@@ -79,15 +80,8 @@ if (import.meta.main) {
   healer.on("restored", (payload: WsPayload) => {
     broadcast(payload);
   });
-  healer.on("agent-activity", (activity: unknown) => {
-    const a = (activity ?? {}) as { providerId?: string; agentState?: string; message?: string };
-    broadcast({
-      status: "healing",
-      nodeId: a.providerId ?? "unknown",
-      agentState: a.agentState,
-      message: a.message,
-      timestamp: new Date().toISOString(),
-    });
+  healer.on("agent-activity", (payload: WsPayload) => {
+    broadcast(payload);
   });
 
   ingestion.start();

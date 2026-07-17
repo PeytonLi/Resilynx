@@ -4,14 +4,14 @@ import { handleRequest, resetForTests } from "./index";
 afterEach(() => resetForTests());
 
 describe("mock provider", () => {
-  it("GET /data returns payload with reading.value, reading.unit, reading.ts", async () => {
+  it("GET /data returns payload with ticker, price, currency, ts", async () => {
     const res = handleRequest(new Request("http://localhost/data"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(typeof body.reading).toBe("object");
-    expect(typeof body.reading.value).toBe("number");
-    expect(typeof body.reading.unit).toBe("string");
-    expect(typeof body.reading.ts).toBe("string");
+    expect(typeof body.ticker).toBe("string");
+    expect(typeof body.price).toBe("number");
+    expect(body.currency).toBe("USD");
+    expect(typeof body.ts).toBe("string");
   });
 
   it("POST /kill makes subsequent GET /data return 503", async () => {
@@ -36,13 +36,13 @@ describe("mock provider", () => {
     expect(res.status).toBe(404);
   });
 
-  it("cycles through different values on successive calls", async () => {
-    const vals = new Set<number>();
+  it("cycles through different tickers on successive calls", async () => {
+    const tickers = new Set<string>();
     for (let i = 0; i < 5; i++) {
       const res = handleRequest(new Request("http://localhost/data"));
       const body = await res.json();
-      vals.add(body.reading.value);
+      tickers.add(body.ticker);
     }
-    expect(vals.size).toBeGreaterThanOrEqual(2);
+    expect(tickers.size).toBeGreaterThanOrEqual(2);
   });
 });

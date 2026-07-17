@@ -52,10 +52,6 @@ export class IngestionEngine extends EventEmitter {
 
   private startProvider(provider: ProviderRegistryEntry): void {
     if (!provider.enabled) return;
-    if (provider.authMode !== "none") {
-      console.log(`[ingestion] skipping ${provider.id}: authMode "${provider.authMode}" not yet supported`);
-      return;
-    }
     if (this.timers.has(provider.id)) return;
     const run = () => void this.poll(provider);
     run();
@@ -81,7 +77,7 @@ export class IngestionEngine extends EventEmitter {
       const res = await this.fetchWithTimeout(this.standardizeUrl, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ providerId: provider.id, metric: provider.id, rawPayload: payload, fieldMapping: provider.fieldMapping }),
+        body: JSON.stringify({ providerId: provider.id, metric: provider.fieldMapping.metric ?? provider.id, rawPayload: payload, fieldMapping: provider.fieldMapping }),
       });
       if (!res.ok) {
         console.warn(`[ingestion] standardization service returned ${res.status}; skipping ${provider.id} this cycle`);
