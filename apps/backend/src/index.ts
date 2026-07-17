@@ -1,10 +1,9 @@
 import { PORTS, type NexsetRecord, type WsPayload } from "@resilynx/contracts";
-import { Healer, SmartHealerSession, ZeroAgentRunner, ZeroHealerSession } from "@resilynx/healer";
+import { Healer } from "@resilynx/healer";
 import { publish, websocketHandlers } from "./broadcaster";
 import { Store } from "./db";
 import { HealthMonitor } from "./healthMonitor";
 import { IngestionEngine, type IngestionFailure } from "./ingestion";
-import { loadNexlaResources, MockWebhookRelay, NexlaApiClient, NexlaIngestionEngine } from "./nexla";
 import { ProviderRegistry } from "./registry";
 
 export const registry = new ProviderRegistry();
@@ -95,12 +94,8 @@ if (import.meta.main) {
   registry.watch();
 
   store = new Store();
-  const zeroRunner = new ZeroAgentRunner();
-  const healer = new Healer(new ZeroHealerSession(zeroRunner, new SmartHealerSession()));
-  const resources = loadNexlaResources();
-  const ingestion = new NexlaIngestionEngine(registry, resources, undefined, zeroRunner);
-  const mockResource = resources.resources.find((resource) => resource.providerId === "mock-exchange");
-  const mockRelay = mockResource?.webhookUrl ? new MockWebhookRelay(mockResource.webhookUrl) : undefined;
+  const healer = new Healer();
+  const ingestion = new IngestionEngine(registry);
   healthMonitor = new HealthMonitor(healer);
 
   const server = Bun.serve({
@@ -134,9 +129,6 @@ if (import.meta.main) {
   ingestion.on("failure", (failure: IngestionFailure) => {
     healthMonitor.recordFailure(failure);
   });
-  mockRelay?.on("failure", (failure: IngestionFailure) => {
-    healthMonitor.recordFailure(failure);
-  });
 
   healthMonitor.on("down", (providerId: string) => {
     broadcast({ status: "degraded", nodeId: providerId, timestamp: new Date().toISOString() });
@@ -156,7 +148,6 @@ if (import.meta.main) {
   });
 
   ingestion.start();
-  mockRelay?.start();
 
   console.log(`backend listening on :${server.port}`);
 }

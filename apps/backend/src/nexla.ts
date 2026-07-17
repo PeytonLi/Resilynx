@@ -20,10 +20,12 @@ const DEFAULT_MANIFEST_PATH = path.resolve(import.meta.dir, "../../../config/nex
 
 export function loadNexlaResources(filePath = process.env.NEXLA_RESOURCES_PATH ?? DEFAULT_MANIFEST_PATH): NexlaResourceManifest {
   if (!process.env.NEXLA_API_URL || !process.env.NEXLA_TOKEN) {
-    throw new Error("NEXLA_API_URL and NEXLA_TOKEN are required. Run `bun run nexla:bootstrap` first.");
+    console.warn("[nexla] NEXLA_API_URL and NEXLA_TOKEN not set — Nexla ingestion disabled");
+    return { resources: [] };
   }
   if (!existsSync(filePath)) {
-    throw new Error(`Nexla resource manifest not found at ${filePath}. Run \`bun run nexla:bootstrap\` first.`);
+    console.warn(`[nexla] Resource manifest not found at ${filePath} — Nexla ingestion disabled`);
+    return { resources: [] };
   }
   const manifest = JSON.parse(readFileSync(filePath, "utf8")) as NexlaResourceManifest;
   if (!Array.isArray(manifest.resources) || manifest.resources.some((resource) => !resource.providerId || !Number.isInteger(resource.nexsetId))) {
