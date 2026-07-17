@@ -5,6 +5,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi",
     "uvicorn",
+    "nexla-sdk",
 ]
 
 [project.optional-dependencies]

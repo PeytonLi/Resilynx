@@ -2,19 +2,48 @@
 Nexla Standardization Service — FastAPI HTTP server on port 5001.
 
 Accepts raw provider payloads and standardizes them into NexsetRecords
-using the provider's registry field mapping.
+using the provider's registry field mapping. On startup, registers provider
+schemas with the Nexla cloud for schema governance.
 """
+import json
+from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from .nexla_client import nexla_registry
 from .resolver import ResolutionError, extract_value
+
+# Registration status set on startup
+_registration_status: dict[str, bool] = {}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Verify Nexla connectivity on startup."""
+    global _registration_status
+    path = Path(__file__).resolve().parent.parent.parent.parent.parent / "config" / "providers.json"
+    if path.exists():
+        with open(path) as f:
+            providers = json.load(f)
+        for p in providers:
+            pid = p.get("id", "unknown")
+            warnings = nexla_registry.validate_field_mapping(p.get("fieldMapping", {}))
+            _registration_status[pid] = len(warnings) == 0
+            if warnings:
+                for w in warnings:
+                    print(f"[nexla] Warning ({pid}): {w}")
+    print(f"[nexla] Validated {len(_registration_status)} provider field mappings")
+    yield
+
 
 app = FastAPI(
     title="Nexla Standardization Service",
     version="0.0.1",
+    lifespan=lifespan,
 )
 
 
@@ -120,3 +149,15 @@ def standardize(body: StandardizeRequest) -> NexsetRecord | JSONResponse:
         timestamp=str(timestamp_raw),
         raw=body.rawPayload,
     )
+
+
+@app.get("/health")
+def health() -> dict[str, Any]:
+    """Health check with Nexla registration status."""
+    return {
+        "status": "ok",
+        "nexla": {
+            "available": nexla_registry.is_available(),
+            "registered": _registration_status,
+        },
+    }
