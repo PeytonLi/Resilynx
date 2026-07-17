@@ -258,6 +258,9 @@ export class ZeroHealerSession implements AgentSession {
     const failed = entries.find((entry) => entry.id === providerId);
     if (!failed) { callbacks.onTurnEnd(); return; }
 
+    // Never heal zeroxyz providers — they're backups themselves. Only heal originals.
+    if (failed.authMode === "zeroxyz") { callbacks.onTurnEnd(); return; }
+
     // Try Zero.xyz discovery
     let candidate: ProviderRegistryEntry;
     try {

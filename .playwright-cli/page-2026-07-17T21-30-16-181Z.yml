@@ -1,0 +1,65 @@
+- generic [ref=f1e2]:
+  - complementary [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - generic [ref=f1e5]: R
+      - generic [ref=f1e6]: ResilynxControl plane
+    - navigation "Dashboard views" [ref=f1e7]:
+      - button "Topology" [ref=f1e8]
+      - button "Activity" [ref=f1e14]
+    - generic [ref=f1e17]:
+      - generic [ref=f1e18]: Relay offline
+      - button "Collapse sidebar" [ref=f1e25]
+  - main [ref=f1e29]:
+    - generic [ref=f1e30]:
+      - generic [ref=f1e36]:
+        - generic [ref=f1e37]: Autonomous resilienceLive control plane
+        - heading "Network resilience, in motion." [level=1] [ref=f1e38]
+      - generic [ref=f1e39]:
+        - generic [ref=f1e40]: Relay offline
+        - button "Outage drill" [ref=f1e41]
+        - button "Revive" [disabled] [ref=f1e44]
+        - button "Hide activity ledger" [ref=f1e48]: Activity
+    - generic [ref=f1e53]:
+      - generic [ref=f1e59]:
+        - generic [ref=f1e60]: Stable sources
+        - generic [ref=f1e61]: "4"
+      - generic [ref=f1e66]:
+        - generic [ref=f1e67]: Attention
+        - generic [ref=f1e68]: "0"
+      - generic [ref=f1e73]:
+        - generic [ref=f1e74]: Healing runs
+        - generic [ref=f1e75]: "0"
+      - generic [ref=f1e82]:
+        - generic [ref=f1e83]: Observed
+        - generic [ref=f1e84]: "4"
+    - generic [ref=f1e85]:
+      - generic [ref=f1e86]:
+        - generic [ref=f1e87]:
+          - generic [ref=f1e88]:
+            - generic [ref=f1e89]: Live topology
+            - heading "Sources converge, normalize, and persist." [level=2] [ref=f1e93]
+          - generic [ref=f1e94]: 4 providers observed
+        - generic [ref=f1e98]:
+          - generic [ref=f1e99]: Ingest
+          - generic [ref=f1e100]: Standardize
+          - generic [ref=f1e101]: Protect
+          - text: Drag to orbit · scroll to zoom
+      - complementary [ref=f1e102]:
+        - button "Close activity ledger" [ref=f1e104]
+        - generic [ref=f1e108]:
+          - generic [ref=f1e110]:
+            - generic [ref=f1e115]:
+              - generic [ref=f1e116]: Live ledger
+              - heading "Recovery activity" [level=2] [ref=f1e123]
+            - text: "0"
+          - tablist "Filter activity" [ref=f1e124]:
+            - tab "All" [selected] [ref=f1e125]
+            - tab "Stable" [ref=f1e126]
+            - tab "Degraded" [ref=f1e127]
+            - tab "Healing" [ref=f1e128]
+          - generic [ref=f1e130]:
+            - paragraph [ref=f1e138]: Listening for changes
+            - paragraph [ref=f1e139]: Provider health and healer actions will appear here as they happen.
+    - generic [ref=f1e140]:
+      - generic [ref=f1e141]: Live ingestion fabric
+      - text: Resilynx / sandbox

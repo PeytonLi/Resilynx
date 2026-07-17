@@ -1,0 +1,48 @@
+- generic [ref=e2]:
+  - complementary [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: R
+      - generic [ref=e6]: ResilynxControl plane
+    - navigation "Dashboard views" [ref=e7]:
+      - button "Topology" [ref=e8]
+      - button "Activity" [ref=e14]
+    - generic [ref=e17]:
+      - generic [ref=e18]: Relay offline
+      - button "Collapse sidebar" [ref=e25]
+  - main [ref=e29]:
+    - generic [ref=e30]:
+      - generic [ref=e36]:
+        - generic [ref=e37]: Autonomous resilienceLive control plane
+        - heading "Network resilience, in motion." [level=1] [ref=e38]
+      - generic [ref=e39]:
+        - generic [ref=e40]: Relay offline
+        - button "Outage drill" [ref=e41]
+        - button "Revive" [disabled] [ref=e44]
+        - button "Show activity ledger" [ref=e48]: Activity
+    - generic [ref=e53]:
+      - generic [ref=e59]:
+        - generic [ref=e60]: Stable sources
+        - generic [ref=e61]: "4"
+      - generic [ref=e66]:
+        - generic [ref=e67]: Attention
+        - generic [ref=e68]: "0"
+      - generic [ref=e73]:
+        - generic [ref=e74]: Healing runs
+        - generic [ref=e75]: "0"
+      - generic [ref=e82]:
+        - generic [ref=e83]: Observed
+        - generic [ref=e84]: "4"
+    - generic [ref=e86]:
+      - generic [ref=e87]:
+        - generic [ref=e88]:
+          - generic [ref=e89]: Live topology
+          - heading "Sources converge, normalize, and persist." [level=2] [ref=e93]
+        - generic [ref=e94]: 4 providers observed
+      - generic [ref=e98]:
+        - generic [ref=e99]: Ingest
+        - generic [ref=e100]: Standardize
+        - generic [ref=e101]: Protect
+        - text: Drag to orbit · scroll to zoom
+    - generic [ref=e102]:
+      - generic [ref=e103]: Live ingestion fabric
+      - text: Resilynx / sandbox
