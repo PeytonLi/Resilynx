@@ -15,7 +15,7 @@ export default function Home() {
   const { networkStatus, events, connected } = useWebSocket();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeView, setActiveView] = useState("architecture");
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [mockAlive, setMockAlive] = useState<boolean | null>(null);
   const [liveProviders, setLiveProviders] = useState<ProviderRegistryEntry[]>(providers);
   const [mockAction, setMockAction] = useState<"kill" | "revive" | null>(null);
@@ -49,6 +49,7 @@ export default function Home() {
   const setView = (view: string) => {
     setActiveView(view);
     if (view === "events") setRightPanelOpen(true);
+    if (view === "architecture") setRightPanelOpen(false);
   };
 
   return (
@@ -97,7 +98,7 @@ export default function Home() {
         {/* Main content */}
         <div className="reveal reveal-delay-2 relative flex min-h-0 flex-1 gap-2">
           <section className="liquid-glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.5rem]">
-            {activeView === "architecture-detail" ? <ArchitecturePanel /> : <ArchitectureFlow />}
+            {activeView === "architecture-detail" ? <ArchitectureFlow /> : <ArchitecturePanel />}
           </section>
 
           {rightPanelOpen && (

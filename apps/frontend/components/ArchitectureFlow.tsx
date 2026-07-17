@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity, ArrowRight, Cpu, Database, Globe, Radio,
-  Server, Shield, Sparkles, Wifi, Zap,
+  Server, Shield, Sparkles, Wifi, Zap, Home, AlertTriangle, CheckCircle, Timer,
 } from "lucide-react";
 import { useWebSocket, type NodeState } from "@/hooks/useWebSocket";
 
@@ -124,6 +124,23 @@ function FlowArrow({ active = true }: { active?: boolean }) {
 
 export function ArchitectureFlow() {
   const { networkStatus } = useWebSocket();
+  const mockState = networkStatus.get("mock-grid");
+  const degradedAt = useRef<number | null>(null);
+  const [restoreTime, setRestoreTime] = useState<number | null>(null);
+
+  // Track restore time
+  useEffect(() => {
+    if (mockState?.status === "degraded" || mockState?.status === "healing") {
+      if (!degradedAt.current) degradedAt.current = Date.now();
+    }
+    if ((mockState?.status === "stable" || mockState?.status === "restored") && degradedAt.current) {
+      setRestoreTime((Date.now() - degradedAt.current) / 1000);
+      degradedAt.current = null;
+    }
+  }, [mockState?.status]);
+
+  const isDegraded = mockState?.status === "degraded" || mockState?.status === "healing";
+  const justRestored = mockState?.status === "restored" && restoreTime !== null;
 
   return (
     <div className="flex h-full flex-col" style={{ background: "#060d18" }}>
@@ -149,6 +166,97 @@ export function ArchitectureFlow() {
       </div>
 
       {/* Architecture flow */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-auto">
+        {/* ── HUMAN IMPACT BANNER ── */}
+        <div className="shrink-0 px-8 pt-4 pb-2">
+          <div className="rounded-2xl overflow-hidden transition-all duration-700"
+            style={{
+              background: isDegraded
+                ? "linear-gradient(135deg, rgba(239,68,68,0.15), rgba(245,158,11,0.08))"
+                : justRestored
+                  ? "linear-gradient(135deg, rgba(34,197,94,0.15), rgba(57,214,189,0.08))"
+                  : "linear-gradient(135deg, rgba(34,197,94,0.06), rgba(57,214,189,0.03))",
+              border: `1px solid ${isDegraded ? "rgba(239,68,68,0.3)" : justRestored ? "rgba(34,197,94,0.3)" : "rgba(34,197,94,0.12)"}`,
+            }}
+          >
+            <div className="flex items-center gap-6 px-6 py-5">
+              {/* Icon */}
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl transition-all duration-500"
+                style={{
+                  background: isDegraded
+                    ? "rgba(239,68,68,0.2)"
+                    : justRestored
+                      ? "rgba(34,197,94,0.2)"
+                      : "rgba(34,197,94,0.1)",
+                  border: `2px solid ${isDegraded ? "rgba(239,68,68,0.4)" : justRestored ? "rgba(34,197,94,0.4)" : "rgba(34,197,94,0.2)"}`,
+                }}
+              >
+                {isDegraded
+                  ? <AlertTriangle size={26} style={{ color: "#ef4444" }} />
+                  : justRestored
+                    ? <CheckCircle size={26} style={{ color: "#22c55e" }} />
+                    : <Home size={26} style={{ color: "#22c55e" }} />
+                }
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-1">
+                  <h3 className="text-base font-bold text-[#edf7ff]" style={{ fontFamily: "'Fira Code', monospace" }}>
+                    {isDegraded
+                      ? "GRID MONITORING: OFFLINE"
+                      : justRestored
+                        ? "GRID MONITORING: RESTORED"
+                        : "GRID MONITORING: ACTIVE"
+                    }
+                  </h3>
+                  <span className={`text-[10px] font-semibold uppercase tracking-[0.1em] px-2 py-0.5 rounded-md ${isDegraded ? "bg-[rgba(239,68,68,0.2)] text-[#fca5a5]" : justRestored ? "bg-[rgba(34,197,94,0.2)] text-[#86efac]" : "bg-[rgba(34,197,94,0.15)] text-[#86efac]"}`}
+                    style={{ fontFamily: "'Fira Code', monospace" }}>
+                    {isDegraded ? "OUTAGE" : justRestored ? "RECOVERED" : "HEALTHY"}
+                  </span>
+                </div>
+
+                <p className="text-[13px] text-[#b9d9f0] leading-relaxed">
+                  {isDegraded
+                    ? "Estimated impact: 50,000 households without real-time grid monitoring. Resilynx is autonomously restoring service..."
+                    : justRestored
+                      ? `Service restored in ${restoreTime?.toFixed(1)}s — 50,000 households back online. Zero human intervention required.`
+                      : "All systems operational. 50,000 households receiving real-time grid frequency monitoring via the national data feed."
+                  }
+                </p>
+
+                {/* Stats row */}
+                <div className="flex items-center gap-6 mt-3">
+                  <div className="flex items-center gap-2 text-[10px]" style={{ fontFamily: "'Fira Code', monospace" }}>
+                    <Home size={12} style={{ color: isDegraded ? "#fca5a5" : "#86efac" }} />
+                    <span className="text-[#94a3b8]">Households:</span>
+                    <span className={`font-semibold ${isDegraded ? "text-[#fca5a5]" : "text-[#86efac]"}`}>
+                      {isDegraded ? "50,000 at risk" : "50,000 protected"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px]" style={{ fontFamily: "'Fira Code', monospace" }}>
+                    <Timer size={12} style={{ color: justRestored ? "#22c55e" : "#94a3b8" }} />
+                    <span className="text-[#94a3b8]">Restore time:</span>
+                    <span className={`font-semibold ${justRestored ? "text-[#22c55e]" : "text-[#94a3b8]"}`}>
+                      {justRestored ? `${restoreTime?.toFixed(1)}s` : "N/A"}
+                    </span>
+                  </div>
+                  {isDegraded && (
+                    <div className="flex items-center gap-2 text-[10px]" style={{ fontFamily: "'Fira Code', monospace" }}>
+                      <Activity size={12} style={{ color: "#f59e0b" }} />
+                      <span className="text-[#94a3b8]">Agent:</span>
+                      <span className="font-semibold text-[#fbbf24]">
+                        {mockState?.agentState || "detecting..."}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── ARCHITECTURE FLOW ── */}
       <div className="flex-1 flex items-center justify-center px-8 py-4 min-h-0 overflow-auto">
         <div className="flex items-start gap-6 w-full max-w-4xl">
           {/* ── LEFT: Provider column ── */}
@@ -292,6 +400,7 @@ export function ArchitectureFlow() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
