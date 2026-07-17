@@ -73,5 +73,20 @@
     },
     "priority": 5,
     "enabled": true
+  },
+  {
+    "id": "mock-grid-zero-backup",
+    "displayName": "GridPulse US Power Grid Status API (Zero.xyz)",
+    "endpoint": "https://gridpulse-amber.vercel.app/api/energy/grid",
+    "authMode": "zeroxyz",
+    "pollIntervalMs": 300000,
+    "fieldMapping": {
+      "metric": "grid_frequency",
+      "value": "$value",
+      "unit": "$unit",
+      "timestamp": "$timestamp"
+    },
+    "priority": 5,
+    "enabled": true
   }
 ]

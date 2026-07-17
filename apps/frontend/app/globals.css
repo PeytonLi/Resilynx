@@ -453,6 +453,15 @@ button:focus-visible {
   gap: 0.75rem;
 }
 
+.app-shell > main > div:nth-of-type(1) > section {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.5rem;
+}
+
 .network-stage {
   position: relative;
   display: flex;
