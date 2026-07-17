@@ -66,7 +66,7 @@ export function EventFeed({ events }: Props) {
               fontFamily: "'Fira Code', monospace",
               background: filter === tab ? "rgba(93,232,255,0.1)" : "transparent",
               color: filter === tab ? "#a9f5ff" : "#718aa1",
-              border: filter === tab ? "1px solid rgba(93,232,255,0.22)" : "1px solid transparent",
+              border: "1px solid transparent",
             }}
           >
             {tab}
