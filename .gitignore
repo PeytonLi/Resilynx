@@ -9,6 +9,7 @@ __pycache__/
 .env
 .env.local
 *.log
+config/nexla-resources.json
 .worktrees/
 .pi-subagents/
 .tokensave/

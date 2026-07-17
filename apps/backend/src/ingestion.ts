@@ -8,6 +8,7 @@
  */
 import { EventEmitter } from "node:events";
 import type { NexsetRecord, ProviderRegistryEntry } from "@resilynx/contracts";
+import type { ZeroRunner } from "@resilynx/healer";
 
 export interface IngestionFailure {
   providerId: string;
@@ -29,6 +30,7 @@ export class IngestionEngine extends EventEmitter {
     private readonly registry: RegistrySource,
     private readonly standardizeUrl: string = DEFAULT_STANDARDIZE_URL,
     private readonly fetchImpl: typeof fetch = fetch,
+    private readonly zeroRunner?: ZeroRunner,
   ) {
     super();
   }
@@ -61,12 +63,17 @@ export class IngestionEngine extends EventEmitter {
   private async poll(provider: ProviderRegistryEntry): Promise<void> {
     let payload: unknown;
     try {
-      const res = await this.fetchWithTimeout(provider.endpoint);
-      if (!res.ok) {
-        this.emitFailure(provider.id, `HTTP ${res.status} from ${provider.endpoint}`);
-        return;
+      if (provider.authMode === "zeroxyz") {
+        if (!this.zeroRunner) throw new Error("Zero runner is not configured");
+        payload = await this.zeroRunner.fetch(provider);
+      } else {
+        const res = await this.fetchWithTimeout(provider.endpoint);
+        if (!res.ok) {
+          this.emitFailure(provider.id, `HTTP ${res.status} from ${provider.endpoint}`);
+          return;
+        }
+        payload = await res.json();
       }
-      payload = await res.json();
     } catch (err) {
       this.emitFailure(provider.id, `fetch error: ${(err as Error).message}`);
       return;

@@ -1,0 +1,7 @@
+{
+  "resources": [
+    { "providerId": "coingecko", "sourceId": 0, "nexsetId": 0 },
+    { "providerId": "exchangerate", "sourceId": 0, "nexsetId": 0 },
+    { "providerId": "mock-exchange", "sourceId": 0, "nexsetId": 0, "webhookUrl": "https://example.invalid/nexla-webhook" }
+  ]
+}

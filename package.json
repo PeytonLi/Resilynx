@@ -5,7 +5,8 @@
     "build": "turbo run build",
     "dev": "powershell -ExecutionPolicy Bypass -File scripts/dev.ps1",
     "test": "turbo run test",
-    "test:all": "turbo run test && cd apps/nexla-service && python -m pytest tests/ -v"
+    "test:all": "turbo run test && cd apps/nexla-service && python -m pytest tests/ -v",
+    "nexla:bootstrap": "bun scripts/nexla-bootstrap.ts"
   },
   "devDependencies": {
     "turbo": "^2.3.0"
