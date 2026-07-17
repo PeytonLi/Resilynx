@@ -1,10 +1,21 @@
 import { describe, expect, it } from "bun:test";
-import { NexlaIngestionEngine, type NexlaResourceManifest } from "./nexla";
+import { NexlaApiClient, NexlaIngestionEngine, type NexlaResourceManifest } from "./nexla";
 
 const registry = { getProviders: () => [{ id: "coin", displayName: "Coin", endpoint: "unused", authMode: "none" as const, pollIntervalMs: 1, fieldMapping: {}, priority: 1, enabled: true }] };
 const resources: NexlaResourceManifest = { resources: [{ providerId: "coin", sourceId: 1, nexsetId: 2 }] };
 
 describe("NexlaIngestionEngine", () => {
+  it("uses bearer authentication for Express API requests", async () => {
+    let request: Request | undefined;
+    const client = new NexlaApiClient("https://express.dev/", "test-token", async (input, init) => {
+      request = new Request(input, init);
+      return Response.json({ samples: [] });
+    });
+    await client.getNexset(42);
+    expect(request?.url).toBe("https://express.dev/nexla/nexsets/42");
+    expect(request?.headers.get("authorization")).toBe("Bearer test-token");
+  });
+
   it("maps a transformed Nexla sample into a reading", async () => {
     const engine = new NexlaIngestionEngine(registry, resources, { getNexset: async () => ({ samples: [{ metric: "price", value: 42, unit: "USD", timestamp: "2026-01-01T00:00:00Z" }] }) });
     const readings: unknown[] = [];

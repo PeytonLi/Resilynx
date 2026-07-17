@@ -4,7 +4,7 @@ import { publish, websocketHandlers } from "./broadcaster";
 import { Store } from "./db";
 import { HealthMonitor } from "./healthMonitor";
 import { IngestionEngine, type IngestionFailure } from "./ingestion";
-import { loadNexlaResources, MockWebhookRelay, NexlaIngestionEngine } from "./nexla";
+import { loadNexlaResources, MockWebhookRelay, NexlaApiClient, NexlaIngestionEngine } from "./nexla";
 import { ProviderRegistry } from "./registry";
 
 export const registry = new ProviderRegistry();
@@ -13,7 +13,7 @@ export { publish, websocketHandlers } from "./broadcaster";
 export { Store } from "./db";
 export { HealthMonitor } from "./healthMonitor";
 export { IngestionEngine, type IngestionFailure } from "./ingestion";
-export { loadNexlaResources, MockWebhookRelay, NexlaIngestionEngine } from "./nexla";
+export { loadNexlaResources, MockWebhookRelay, NexlaApiClient, NexlaIngestionEngine } from "./nexla";
 export { ProviderRegistry } from "./registry";
 
 // Module-level references set during server startup so handleRequest can reach them.
