@@ -20,7 +20,7 @@ class ResolutionError(Exception):
 
 
 def _is_literal(mapping_value: str) -> bool:
-    """A mapping value is a literal if it contains no dot and no bracket."""
+    """A mapping value may be a literal when it contains no dot or bracket."""
     return "." not in mapping_value and "[" not in mapping_value
 
 
@@ -32,7 +32,7 @@ def resolve_dot_path(payload: dict[str, Any], path: str) -> Any:
     Returns the resolved value or raises ResolutionError.
     """
     if _is_literal(path):
-        return path
+        return payload.get(path, path)
 
     segments = path.split(".")
     current: Any = payload
@@ -80,6 +80,6 @@ def extract_value(payload: dict[str, Any], path: str) -> Any:
     Extract a value from a payload using dot-path resolution.
     Returns the value directly, or raises ResolutionError.
 
-    Literal strings (those without "." or "[") are returned as-is.
+    Single-segment mappings resolve matching top-level keys, otherwise act as literals.
     """
     return resolve_dot_path(payload, path)

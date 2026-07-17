@@ -41,7 +41,7 @@ export interface AgentSession {
 // Simulated agent (no LLM dependency)
 // ---------------------------------------------------------------------------
 
-const REGISTRY_PATH = resolve("config", "providers.json");
+const REGISTRY_PATH = resolve(import.meta.dir, "../../../", "config", "providers.json");
 
 /** Approximates what a real agent would do with the prompt instructions. */
 export class SimulatedAgentSession implements AgentSession {
@@ -70,11 +70,19 @@ export class SimulatedAgentSession implements AgentSession {
     }
 
     const failedEntry = entries[failedIndex];
+    if (failedEntry.authMode === "zeroxyz") {
+      callbacks.onTurnEnd();
+      return;
+    }
 
     // ---- Turn 3: discover backup via Zero.xyz (simulated) ----
     callbacks.onTurnStart("discovering-backup");
 
     const backup = this.simulateZeroXyzDiscovery(failedEntry);
+    if (entries.some((entry) => entry.id === backup.id)) {
+      callbacks.onTurnEnd();
+      return;
+    }
 
     // ---- Turn 4: patch the registry ----
     callbacks.onTurnStart("patching-registry");

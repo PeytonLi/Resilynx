@@ -9,7 +9,7 @@
       "metric": "crypto_price",
       "value": "bitcoin.usd",
       "unit": "USD",
-      "timestamp": "bitcoin.usd"
+      "timestamp": "live"
     },
     "priority": 1,
     "enabled": true

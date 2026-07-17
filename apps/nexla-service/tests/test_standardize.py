@@ -39,6 +39,9 @@ class TestDotPathResolver:
         payload = {"anything": 42}
         assert extract_value(payload, "celsius") == "celsius"
 
+    def test_top_level_field(self):
+        assert extract_value({"price": 215.5}, "price") == 215.5
+
     def test_missing_key_raises_error(self):
         payload = {"data": {}}
         with pytest.raises(ResolutionError) as exc:

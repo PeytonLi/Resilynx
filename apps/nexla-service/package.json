@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "dev": "python -m uvicorn nexla_service.server:app --app-dir src --port 5001",
     "build": "echo \"nexla-service: python package, no JS build step\"",
     "test": "echo \"nexla-service: run pytest in a Python venv, see pyproject.toml\""
   }
