@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata = {
-  title: "Resilynx",
+  title: "Resilynx — Provider Network Sandbox",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

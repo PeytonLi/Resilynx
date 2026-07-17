@@ -1,0 +1,47 @@
+import type { ProviderRegistryEntry } from "@resilynx/contracts";
+
+export const providers: ProviderRegistryEntry[] = [
+  {
+    id: "uk-carbon-intensity",
+    displayName: "UK Carbon Intensity API",
+    endpoint: "https://api.carbonintensity.org.uk/intensity",
+    authMode: "none",
+    pollIntervalMs: 30000,
+    fieldMapping: {
+      value: "data[0].intensity.actual",
+      unit: "gCO2/kWh",
+      timestamp: "data[0].from",
+    },
+    priority: 1,
+    enabled: true,
+  },
+  {
+    id: "open-meteo",
+    displayName: "Open-Meteo Current Weather",
+    endpoint:
+      "https://api.open-meteo.com/v1/forecast?latitude=37.87&longitude=-122.26&current=temperature_2m",
+    authMode: "none",
+    pollIntervalMs: 30000,
+    fieldMapping: {
+      value: "current.temperature_2m",
+      unit: "celsius",
+      timestamp: "current.time",
+    },
+    priority: 2,
+    enabled: true,
+  },
+  {
+    id: "mock-carbon-registry",
+    displayName: "Mock Carbon Registry",
+    endpoint: "http://localhost:4001/data",
+    authMode: "none",
+    pollIntervalMs: 15000,
+    fieldMapping: {
+      value: "reading.value",
+      unit: "reading.unit",
+      timestamp: "reading.ts",
+    },
+    priority: 3,
+    enabled: true,
+  },
+];

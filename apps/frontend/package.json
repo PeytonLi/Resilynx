@@ -8,6 +8,7 @@
     "test": "echo \"frontend: 3D rendering verified visually, not unit-tested (see PRD.md)\""
   },
   "dependencies": {
+    "@resilynx/contracts": "workspace:*",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -9,7 +9,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@resilynx/contracts": "workspace:*"
+    "@resilynx/contracts": "workspace:*",
+    "@resilynx/healer": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"

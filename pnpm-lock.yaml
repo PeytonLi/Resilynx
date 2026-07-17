@@ -17,6 +17,9 @@ importers:
       '@resilynx/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@resilynx/healer':
+        specifier: workspace:*
+        version: link:../../packages/healer
     devDependencies:
       '@types/bun':
         specifier: latest
@@ -24,6 +27,9 @@ importers:
 
   apps/frontend:
     dependencies:
+      '@resilynx/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       next:
         specifier: ^15.1.0
         version: 15.5.20(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -68,6 +74,10 @@ importers:
   packages/contracts: {}
 
   packages/healer:
+    dependencies:
+      '@resilynx/contracts':
+        specifier: workspace:*
+        version: link:../contracts
     devDependencies:
       '@types/bun':
         specifier: latest
