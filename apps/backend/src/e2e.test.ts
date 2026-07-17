@@ -24,6 +24,7 @@ const TEST_DIR = resolve(import.meta.dir, "../.e2e-tmp");
 const TEST_REGISTRY = join(TEST_DIR, "providers.json");
 const MOCK_PORT = 14001;
 const NEXLA_PORT = 15001;
+const BACKEND_E2E_PORT = 18080;
 
 // The healer uses the real config/providers.json path. Save/restore it.
 const REAL_REGISTRY = resolve(import.meta.dir, "../../../config/providers.json");
@@ -164,7 +165,7 @@ describe("E2E: kill → degraded → healing → restored → revive", () => {
     ingestion = new IngestionEngine(registry, `http://localhost:${NEXLA_PORT}/standardize`);
 
     backendServer = Bun.serve({
-      port: PORTS.backend,
+      port: BACKEND_E2E_PORT,
       async fetch(req, srv) {
         const url = new URL(req.url);
         if (url.pathname === "/ws") {
@@ -241,7 +242,7 @@ describe("E2E: kill → degraded → healing → restored → revive", () => {
   function connectWs(): Promise<{ messages: WsPayload[]; close: () => void }> {
     return new Promise((resolve, reject) => {
       const messages: WsPayload[] = [];
-      const ws = new WebSocket(`ws://localhost:${PORTS.backend}/ws`);
+      const ws = new WebSocket(`ws://localhost:${BACKEND_E2E_PORT}/ws`);
       ws.onmessage = (ev) => {
         messages.push(JSON.parse(ev.data as string) as WsPayload);
       };
@@ -283,7 +284,7 @@ describe("E2E: kill → degraded → healing → restored → revive", () => {
     const { messages, close } = await connectWs();
 
     // Kill the mock provider via the backend proxy
-    const killRes = await fetch(`http://localhost:${PORTS.backend}/mock/kill`, { method: "POST" });
+    const killRes = await fetch(`http://localhost:${BACKEND_E2E_PORT}/mock/kill`, { method: "POST" });
     expect(killRes.status).toBe(200);
 
     const degraded = await waitForStatus(messages, "degraded", 60_000);
@@ -312,7 +313,7 @@ describe("E2E: kill → degraded → healing → restored → revive", () => {
   });
 
   it("POST /mock/revive restores the mock to 200 OK", async () => {
-    const reviveRes = await fetch(`http://localhost:${PORTS.backend}/mock/revive`, { method: "POST" });
+    const reviveRes = await fetch(`http://localhost:${BACKEND_E2E_PORT}/mock/revive`, { method: "POST" });
     expect(reviveRes.status).toBe(200);
 
     // Verify the mock itself returns 200 on /data

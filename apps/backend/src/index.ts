@@ -18,15 +18,27 @@ export { ProviderRegistry } from "./registry";
 let store: Store | undefined;
 let healthMonitor: HealthMonitor | undefined;
 
+/** Wraps a Response with CORS headers so the frontend (port 3000) can call the backend (port 8080). */
+function cors(res: Response): Response {
+  res.headers.set("Access-Control-Allow-Origin", "*");
+  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type");
+  return res;
+}
+
 /** Handles plain HTTP routes. /ws upgrades are handled separately (see Bun.serve fetch below). */
 export async function handleRequest(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
+  if (req.method === "OPTIONS") {
+    return cors(new Response(null, { status: 204 }));
+  }
+
   if (url.pathname === "/health") {
-    return Response.json({ status: "ok" });
+    return cors(Response.json({ status: "ok" }));
   }
   if (url.pathname === "/providers") {
-    return Response.json(registry.getProviders());
+    return cors(Response.json(registry.getProviders()));
   }
 
   // Mock provider proxy routes
@@ -34,42 +46,42 @@ export async function handleRequest(req: Request): Promise<Response> {
     try {
       const res = await fetch(`http://localhost:${PORTS.mockProvider}/kill`, { method: "POST" });
       const body = await res.text();
-      return new Response(body, { status: res.status, headers: { "content-type": "application/json" } });
+      return cors(new Response(body, { status: res.status, headers: { "content-type": "application/json" } }));
     } catch (e) {
-      return Response.json({ error: "Mock provider unreachable" }, { status: 502 });
+      return cors(Response.json({ error: "Mock provider unreachable" }, { status: 502 }));
     }
   }
   if (url.pathname === "/mock/revive" && req.method === "POST") {
     try {
       const res = await fetch(`http://localhost:${PORTS.mockProvider}/revive`, { method: "POST" });
       const body = await res.text();
-      return new Response(body, { status: res.status, headers: { "content-type": "application/json" } });
+      return cors(new Response(body, { status: res.status, headers: { "content-type": "application/json" } }));
     } catch (e) {
-      return Response.json({ error: "Mock provider unreachable" }, { status: 502 });
+      return cors(Response.json({ error: "Mock provider unreachable" }, { status: 502 }));
     }
   }
   if (url.pathname === "/mock/status" && req.method === "GET") {
     try {
       const res = await fetch(`http://localhost:${PORTS.mockProvider}/status`);
       const body = await res.text();
-      return new Response(body, { status: res.status, headers: { "content-type": "application/json" } });
+      return cors(new Response(body, { status: res.status, headers: { "content-type": "application/json" } }));
     } catch (e) {
-      return Response.json({ alive: false, error: "Mock provider unreachable" });
+      return cors(Response.json({ alive: false, error: "Mock provider unreachable" }));
     }
   }
 
   if (url.pathname === "/status" && req.method === "GET") {
-    if (!healthMonitor) return new Response("Health monitor not initialized", { status: 503 });
-    return Response.json(Object.fromEntries(healthMonitor.getStatus()));
+    if (!healthMonitor) return cors(new Response("Health monitor not initialized", { status: 503 }));
+    return cors(Response.json(Object.fromEntries(healthMonitor.getStatus())));
   }
 
   if (url.pathname === "/readings" && req.method === "GET") {
-    if (!store) return new Response("Store not initialized", { status: 503 });
+    if (!store) return cors(new Response("Store not initialized", { status: 503 }));
     const limit = parseInt(url.searchParams.get("limit") || "20");
-    return Response.json(store.recentReadings(limit));
+    return cors(Response.json(store.recentReadings(limit)));
   }
 
-  return new Response("Not Found", { status: 404 });
+  return cors(new Response("Not Found", { status: 404 }));
 }
 
 if (import.meta.main) {
