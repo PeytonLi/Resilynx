@@ -36,13 +36,15 @@ Four layers.
 
 *Click Dashboard*
 
-The four providers are polling live. Each card shows the provider's endpoint, last reading value, and unit. The animated dots between columns show data moving from provider through the Nexla core to the database and WebSocket output.
+The four providers are polling live. Each card shows the provider's endpoint, last reading value, and unit. The animated dots between columns show data moving from provider through the Nexla core to the database.
+
+At the top, the impact banner shows what an everyday person would see. Right now, 50,000 simulated households rely on this grid frequency data for power stability monitoring. The banner reads: GRID MONITORING ACTIVE. All households are covered.
 
 *Click Kill Mock*
 
 The mock grid sensor now returns 503. Nothing else is affected — the other three providers continue ingesting normally.
 
-The health monitor counts three consecutive failures and declares the provider degraded. The banner reflects this immediately.
+The health monitor counts three consecutive failures and declares the provider degraded. The banner flips to red: GRID MONITORING OFFLINE. 50,000 households at risk. This is what the normal person sees — their monitoring just went blind.
 
 *Open Events panel*
 
@@ -52,7 +54,7 @@ The Zero.xyz search is a real CLI call — it queries for APIs matching the fail
 
 The backup entry is written to `config/providers.json`. The registry file is watched for changes — it hot-reloads without restarting the backend. The ingestion engine picks up the new provider on the next poll cycle.
 
-Banner shows restored, with the measured recovery time. The entire loop — detect, diagnose, discover, patch, restore — runs in under ten seconds.
+The banner flips back to green: GRID MONITORING RESTORED. It shows the measured recovery time — typically under ten seconds — and confirms 50,000 households are back online. The normal person never knew anything happened.
 
 *Click Revive*
 
