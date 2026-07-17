@@ -1,6 +1,6 @@
 "use client";
 
-import { Layers, Network, PanelLeftClose, PanelLeftOpen, Radio } from "lucide-react";
+import { Activity, Layers, Network, PanelLeftClose, PanelLeftOpen, Radio, Zap } from "lucide-react";
 
 interface Props {
   collapsed: boolean;
@@ -11,8 +11,8 @@ interface Props {
 }
 
 const navItems = [
-  { id: "architecture", label: "Architecture", icon: Layers },
-  { id: "architecture-detail", label: "Details", icon: Network },
+  { id: "architecture", label: "Dashboard", icon: Zap },
+  { id: "architecture-detail", label: "Architecture", icon: Layers },
 ];
 
 export function Sidebar({ collapsed, onToggle, activeView, onViewChange, connected }: Props) {

@@ -98,7 +98,7 @@ export default function Home() {
         {/* Main content */}
         <div className="reveal reveal-delay-2 relative flex min-h-0 flex-1 gap-2">
           <section className="liquid-glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.5rem]">
-            {activeView === "architecture-detail" ? <ArchitectureFlow /> : <ArchitecturePanel />}
+            {activeView === "architecture-detail" ? <ArchitecturePanel /> : <ArchitectureFlow />}
           </section>
 
           {rightPanelOpen && (
