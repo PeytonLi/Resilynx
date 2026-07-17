@@ -149,4 +149,55 @@ describe("HealthMonitor", () => {
     // but we can't easily count without a callback. The important thing is
     // healingInFlight was cleared.
   });
+
+  it("getStatus() returns stable for providers with zero failures", () => {
+    const monitor = new HealthMonitor(makeHealer());
+    monitor.recordSuccess("p1");
+    monitor.recordSuccess("p2");
+
+    const status = monitor.getStatus();
+    expect(status.get("p1")?.status).toBe("stable");
+    expect(status.get("p2")?.status).toBe("stable");
+  });
+
+  it("getStatus() returns degraded for provider with failures below threshold", () => {
+    const monitor = new HealthMonitor(makeHealer());
+    monitor.recordSuccess("p1"); // seen, then fail
+    monitor.recordFailure(makeFailure("p1"));
+    monitor.recordFailure(makeFailure("p1"));
+
+    const status = monitor.getStatus();
+    expect(status.get("p1")?.status).toBe("degraded");
+    // p2 was never seen, so not in map
+    expect(status.has("p2")).toBe(false);
+  });
+
+  it("getStatus() includes lastPoll timestamps", () => {
+    const monitor = new HealthMonitor(makeHealer());
+    monitor.recordSuccess("p1");
+
+    const status = monitor.getStatus();
+    const entry = status.get("p1");
+    expect(entry).toBeDefined();
+    expect(entry!.lastPoll).toBeDefined();
+    // Should be a valid ISO string
+    expect(new Date(entry!.lastPoll!).getTime()).not.toBeNaN();
+  });
+
+  it("handles two providers failing simultaneously with independent heal calls", () => {
+    const h = makeHealer();
+    const monitor = new HealthMonitor(h);
+
+    // Interleave failures: p1, p2, p1, p2, p1, p2 = 3 each
+    monitor.recordFailure(makeFailure("p1"));
+    monitor.recordFailure(makeFailure("p2"));
+    monitor.recordFailure(makeFailure("p1"));
+    monitor.recordFailure(makeFailure("p2"));
+    monitor.recordFailure(makeFailure("p1")); // p1 hits threshold here
+    monitor.recordFailure(makeFailure("p2")); // p2 hits threshold here
+
+    expect(h.heals).toHaveLength(2);
+    expect(h.heals[0].providerId).toBe("p1");
+    expect(h.heals[1].providerId).toBe("p2");
+  });
 });

@@ -1,9 +1,10 @@
 import { PORTS, type NexsetRecord, type WsPayload } from "@resilynx/contracts";
-import { Healer } from "@resilynx/healer";
+import { Healer, SmartHealerSession, ZeroAgentRunner, ZeroHealerSession } from "@resilynx/healer";
 import { publish, websocketHandlers } from "./broadcaster";
 import { Store } from "./db";
 import { HealthMonitor } from "./healthMonitor";
 import { IngestionEngine, type IngestionFailure } from "./ingestion";
+import { loadNexlaResources, MockWebhookRelay, NexlaIngestionEngine } from "./nexla";
 import { ProviderRegistry } from "./registry";
 
 export const registry = new ProviderRegistry();
@@ -12,11 +13,16 @@ export { publish, websocketHandlers } from "./broadcaster";
 export { Store } from "./db";
 export { HealthMonitor } from "./healthMonitor";
 export { IngestionEngine, type IngestionFailure } from "./ingestion";
+export { loadNexlaResources, MockWebhookRelay, NexlaIngestionEngine } from "./nexla";
 export { ProviderRegistry } from "./registry";
 
 // Module-level references set during server startup so handleRequest can reach them.
 let store: Store | undefined;
 let healthMonitor: HealthMonitor | undefined;
+
+// ponytail: test-only setters so handleRequest can be tested with controlled state.
+export function setStore(s: Store) { store = s; }
+export function setHealthMonitor(h: HealthMonitor) { healthMonitor = h; }
 
 /** Wraps a Response with CORS headers so the frontend (port 3000) can call the backend (port 8080). */
 function cors(res: Response): Response {
@@ -89,8 +95,12 @@ if (import.meta.main) {
   registry.watch();
 
   store = new Store();
-  const healer = new Healer();
-  const ingestion = new IngestionEngine(registry);
+  const zeroRunner = new ZeroAgentRunner();
+  const healer = new Healer(new ZeroHealerSession(zeroRunner, new SmartHealerSession()));
+  const resources = loadNexlaResources();
+  const ingestion = new NexlaIngestionEngine(registry, resources, undefined, zeroRunner);
+  const mockResource = resources.resources.find((resource) => resource.providerId === "mock-exchange");
+  const mockRelay = mockResource?.webhookUrl ? new MockWebhookRelay(mockResource.webhookUrl) : undefined;
   healthMonitor = new HealthMonitor(healer);
 
   const server = Bun.serve({
@@ -124,6 +134,9 @@ if (import.meta.main) {
   ingestion.on("failure", (failure: IngestionFailure) => {
     healthMonitor.recordFailure(failure);
   });
+  mockRelay?.on("failure", (failure: IngestionFailure) => {
+    healthMonitor.recordFailure(failure);
+  });
 
   healthMonitor.on("down", (providerId: string) => {
     broadcast({ status: "degraded", nodeId: providerId, timestamp: new Date().toISOString() });
@@ -143,6 +156,7 @@ if (import.meta.main) {
   });
 
   ingestion.start();
+  mockRelay?.start();
 
   console.log(`backend listening on :${server.port}`);
 }

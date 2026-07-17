@@ -92,4 +92,24 @@ describe("WebSocket Broadcaster", () => {
     expect(messages[0].agentState).toBe("searching");
     expect(messages[0].message).toBe("Looking for backup providers...");
   });
+
+  it("publishes to multiple connected clients simultaneously", async () => {
+    const [c1, c2, c3] = await Promise.all([connect(), connect(), connect()]);
+
+    const payload: WsPayload = {
+      status: "degraded",
+      nodeId: "p1",
+      timestamp: new Date().toISOString(),
+    };
+    publish(server, payload);
+
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(c1.messages.length).toBeGreaterThanOrEqual(1);
+    expect(c2.messages.length).toBeGreaterThanOrEqual(1);
+    expect(c3.messages.length).toBeGreaterThanOrEqual(1);
+    expect(c1.messages[0].status).toBe("degraded");
+    expect(c2.messages[0].status).toBe("degraded");
+    expect(c3.messages[0].status).toBe("degraded");
+  });
 });

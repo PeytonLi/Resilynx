@@ -88,4 +88,24 @@ describe("ProviderRegistry", () => {
 
     expect(registry.getProviders()).toEqual(GOOD_CONFIG as never);
   });
+
+  it("debounces rapid file edits into a single change event", async () => {
+    await registry.load();
+    registry.watch();
+
+    const events: unknown[] = [];
+    registry.on("change", (e) => events.push(e));
+
+    // 3 rapid edits, each with different pollIntervalMs
+    writeFileSync(filePath, JSON.stringify([{ ...GOOD_CONFIG[0], pollIntervalMs: 100 }]));
+    writeFileSync(filePath, JSON.stringify([{ ...GOOD_CONFIG[0], pollIntervalMs: 200 }]));
+    writeFileSync(filePath, JSON.stringify([{ ...GOOD_CONFIG[0], pollIntervalMs: 300 }]));
+
+    // Wait long enough for debounce (25ms) + fs watch latency
+    await waitFor(() => registry.getProviders()[0]?.pollIntervalMs === 300);
+
+    // Only one change event, and providers reflect the LAST edit (300)
+    expect(events.length).toBe(1);
+    expect(registry.getProviders()[0]?.pollIntervalMs).toBe(300);
+  });
 });
