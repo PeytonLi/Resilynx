@@ -41,8 +41,8 @@ class NexlaRegistry:
                 if api_url:
                     kwargs["base_url"] = api_url
                 self.client = NexlaClient(**kwargs)
-                # Verify connectivity by listing nexsets (lightweight call)
-                self.client.nexsets.list(limit=1)
+                # Verify connectivity with a lightweight call
+                self.client.nexsets.list()
                 self.connected = True
                 print(f"[nexla] Connected to Nexla cloud ({api_url or 'default'})")
             except Exception as e:
