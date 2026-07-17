@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Activity, CircleDot, PanelRightClose, PanelRightOpen, Power, RotateCcw, X } from "lucide-react";
+import { Activity, CircleDot, PanelRightClose, PanelRightOpen, Power, RotateCcw } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { Sidebar } from "@/components/Sidebar";
 import { KpiBar } from "@/components/KpiBar";
@@ -20,7 +20,7 @@ export default function Home() {
   const { networkStatus, events, connected } = useWebSocket();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeView, setActiveView] = useState("network");
-  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [mockAlive, setMockAlive] = useState<boolean | null>(null);
   const [liveProviders, setLiveProviders] = useState<ProviderRegistryEntry[]>(providers);
   const [mockAction, setMockAction] = useState<"kill" | "revive" | null>(null);
@@ -90,7 +90,7 @@ export default function Home() {
                 <span className="h-1 w-1 rounded-full bg-[#5de8ff]" />
                 <span className="hidden sm:inline">Live control plane</span>
               </div>
-              <h1 className="truncate text-xl font-semibold tracking-[-0.04em] text-[#edf7ff] md:text-2xl">Network resilience, in motion.</h1>
+              <h1 className="text-xl font-semibold tracking-[-0.04em] text-[#edf7ff] md:text-2xl">Network resilience, in motion.</h1>
             </div>
           </div>
 
@@ -138,7 +138,7 @@ export default function Home() {
 
         <div className="reveal reveal-delay-2 relative flex min-h-0 flex-1 gap-3">
           {activeView === "architecture" ? (
-            <section className="liquid-glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.5rem]">
+            <section className="architecture-shell liquid-glass">
               <ArchitecturePanel />
             </section>
           ) : (
@@ -173,16 +173,8 @@ export default function Home() {
           )}
 
           {rightPanelOpen && (
-            <aside className="liquid-glass absolute inset-0 z-30 overflow-hidden rounded-[1.5rem] 2xl:static 2xl:w-[22rem] 2xl:shrink-0">
-              <div className="absolute right-3 top-3 z-20">
-                <button
-                  onClick={() => setRightPanelOpen(false)}
-                  aria-label="Close activity ledger"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6f88a0] transition hover:bg-[rgba(255,255,255,0.06)] hover:text-[#dceefa]"
-                >
-                  <X size={15} />
-                </button>
-              </div>
+            <aside className="absolute inset-0 z-30 overflow-hidden rounded-[1.5rem] 2xl:static 2xl:w-[22rem] 2xl:shrink-0"
+              style={{ background: "#060d18", border: "1px solid rgba(174,219,255,0.1)" }}>
               <EventFeed events={events} />
             </aside>
           )}

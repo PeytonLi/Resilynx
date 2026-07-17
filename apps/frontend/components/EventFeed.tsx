@@ -36,7 +36,7 @@ export function EventFeed({ events }: Props) {
   }, [filtered.length]);
 
   return (
-    <div className="activity-panel relative flex h-full flex-col bg-[rgba(7,17,33,0.62)]">
+    <div className="activity-panel relative flex h-full flex-col" style={{ background: "#060d18" }}>
       <div className="shrink-0 border-b border-[rgba(174,219,255,0.09)] px-4 py-4">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl border border-[rgba(170,150,255,0.24)] bg-[rgba(170,150,255,0.1)] text-[#c2b6ff]">
