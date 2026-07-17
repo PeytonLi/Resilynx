@@ -509,15 +509,45 @@ button:focus-visible {
 .network-stage > div:last-child span:nth-child(3) > span { background: var(--violet); }
 .network-stage > div:last-child span:last-child { margin-left: auto; color: #9eb7c9; }
 
-.app-shell > main > div:nth-of-type(1) > aside {
-  position: absolute;
-  z-index: 30;
-  inset: 0;
+.activity-drawer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  flex: 0 0 clamp(19rem, 27vw, 23rem);
   overflow: hidden;
+  border: 1px solid rgba(174, 219, 255, 0.13);
   border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at 88% 8%, rgba(170, 150, 255, 0.14), transparent 32%),
+    linear-gradient(155deg, rgba(14, 32, 55, 0.82), rgba(5, 13, 27, 0.92));
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(238, 251, 255, 0.08);
+  animation: activity-drawer-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.app-shell > main > div:nth-of-type(1) > aside > div:first-child { position: absolute; z-index: 20; top: 0.75rem; right: 0.75rem; }
-.app-shell > main > div:nth-of-type(1) > aside > div:last-child { display: flex; height: 100%; flex-direction: column; background: rgba(7,17,33,0.62); }
+
+.activity-drawer::before {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 1.25rem;
+  width: 7rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(141, 242, 255, 0.72), transparent);
+  box-shadow: 0 0 16px rgba(93, 232, 255, 0.6);
+  content: "";
+  pointer-events: none;
+}
+
+.activity-drawer .activity-panel {
+  z-index: 1;
+  width: 100%;
+  background: transparent !important;
+}
+
+@keyframes activity-drawer-enter {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 
 /* ── Architecture data-flow diagram ── */
 
@@ -966,8 +996,17 @@ button:focus-visible {
 .app-shell > main > footer span:first-child { display: flex; align-items: center; gap: 0.5rem; }
 .app-shell > main > footer span:first-child > span { width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--teal); }
 
-@media (min-width: 1536px) {
-  .app-shell > main > div:nth-of-type(1) > aside { position: static; width: 22rem; flex: 0 0 22rem; }
+@media (max-width: 720px) {
+  .activity-drawer {
+    position: absolute;
+    z-index: 30;
+    inset: 0;
+    flex-basis: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-drawer { animation: none; }
 }
 
 @media (max-width: 900px) {

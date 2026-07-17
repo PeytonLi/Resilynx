@@ -1,25 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import { Activity, CircleDot, PanelRightClose, PanelRightOpen, Power, RotateCcw } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, Power, RotateCcw } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { Sidebar } from "@/components/Sidebar";
 import { KpiBar } from "@/components/KpiBar";
 import { EventFeed } from "@/components/EventFeed";
+import { ArchitectureFlow } from "@/components/ArchitectureFlow";
 import { ArchitecturePanel } from "@/components/ArchitecturePanel";
 import { providers } from "@/lib/providers";
 import type { ProviderRegistryEntry } from "@resilynx/contracts";
 
-const NetworkCanvas = dynamic(
-  () => import("@/components/NetworkCanvas").then((mod) => mod.NetworkCanvas),
-  { ssr: false },
-);
-
 export default function Home() {
   const { networkStatus, events, connected } = useWebSocket();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeView, setActiveView] = useState("network");
+  const [activeView, setActiveView] = useState("architecture");
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [mockAlive, setMockAlive] = useState<boolean | null>(null);
   const [liveProviders, setLiveProviders] = useState<ProviderRegistryEntry[]>(providers);
@@ -28,161 +23,94 @@ export default function Home() {
 
   useEffect(() => {
     fetch("http://localhost:8080/mock/status")
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((data) => setMockAlive(data.alive))
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((d) => setMockAlive(d.alive))
       .catch(() => setMockAlive(false));
   }, []);
 
   useEffect(() => {
     fetch("http://localhost:8080/providers")
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((data) => setLiveProviders(data))
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((d) => setLiveProviders(d))
       .catch(() => {});
   }, []);
 
   const runMockAction = async (action: "kill" | "revive") => {
-    setMockAction(action);
-    setActionError(null);
+    setMockAction(action); setActionError(null);
     try {
-      const response = await fetch(`http://localhost:8080/mock/${action}`, { method: "POST" });
-      if (!response.ok) throw new Error("Mock service unavailable");
+      const r = await fetch(`http://localhost:8080/mock/${action}`, { method: "POST" });
+      if (!r.ok) throw new Error("Mock service unavailable");
       setMockAlive(action === "revive");
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Unable to reach mock service");
-    } finally {
-      setMockAction(null);
-    }
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Unable to reach mock");
+    } finally { setMockAction(null); }
   };
 
   const setView = (view: string) => {
     setActiveView(view);
-    if (view === "events") {
-      setRightPanelOpen(true);
-    } else if (view === "architecture") {
-      setRightPanelOpen(false);
-    }
-  };
-
-  const toggleActivity = () => {
-    setRightPanelOpen((open) => {
-      const next = !open;
-      setActiveView(next ? "events" : "network");
-      return next;
-    });
+    if (view === "events") setRightPanelOpen(true);
   };
 
   return (
     <div className="app-shell flex h-[100svh] overflow-hidden">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
-        activeView={activeView}
-        onViewChange={setView}
-        connected={connected}
-      />
+      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((c) => !c)}
+        activeView={activeView} onViewChange={setView} connected={connected} />
 
-      <main className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden p-2 md:p-3">
-        <header className="liquid-glass reveal flex shrink-0 flex-wrap items-center justify-between gap-4 rounded-[1.35rem] px-4 py-3 md:px-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="min-w-0">
-              <div className="mb-0.5 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#8db0c9]" style={{ fontFamily: "'Fira Code', monospace" }}>
-                <span>Autonomous resilience</span>
-                <span className="h-1 w-1 rounded-full bg-[#5de8ff]" />
-                <span className="hidden sm:inline">Live control plane</span>
-              </div>
-              <h1 className="text-xl font-semibold tracking-[-0.04em] text-[#edf7ff] md:text-2xl">Network resilience, in motion.</h1>
-            </div>
+      <main className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden p-2 md:p-3">
+        {/* Header */}
+        <header className="liquid-glass reveal flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-[1.35rem] px-4 py-2.5 md:px-5">
+          <div className="min-w-0">
+            <h1 className="text-lg font-semibold tracking-[-0.03em] text-[#edf7ff]">Resilynx</h1>
+            <p className="text-[10px] uppercase tracking-[0.15em] text-[#60748c]" style={{ fontFamily: "'Fira Code', monospace" }}>
+              Self-healing data ingestion sandbox
+            </p>
           </div>
-
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="hidden items-center gap-2 rounded-xl border border-[rgba(126,211,168,0.15)] bg-[rgba(57,214,189,0.08)] px-3 py-2 sm:flex">
-              <span className={`status-dot h-1.5 w-1.5 rounded-full ${connected ? "bg-[#39d6bd] text-[#39d6bd]" : "bg-[#ff637d] text-[#ff637d]"}`} />
-              <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#b6cadc]" style={{ fontFamily: "'Fira Code', monospace" }}>
-                {connected ? "Relay online" : "Relay offline"}
-              </span>
-            </div>
-            <button
-              onClick={() => runMockAction("kill")}
-              disabled={mockAlive === false || mockAction !== null}
-              className="flex min-h-10 items-center gap-2 rounded-xl border border-[rgba(255,99,125,0.27)] bg-[rgba(255,99,125,0.1)] px-3 text-[10px] font-medium uppercase tracking-[0.08em] text-[#ffacba] transition duration-200 hover:bg-[rgba(255,99,125,0.17)] disabled:cursor-not-allowed disabled:opacity-40"
-              style={{ fontFamily: "'Fira Code', monospace" }}
-            >
-              <Power size={14} />
-              {mockAction === "kill" ? "Simulating" : "Outage drill"}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="hidden sm:flex items-center gap-2 rounded-lg border border-[rgba(174,219,255,0.1)] px-3 py-1.5 text-[10px] text-[#94a3b8]" style={{ fontFamily: "'Fira Code', monospace" }}>
+              <span className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-[#22c55e]" : "bg-[#ef4444]"}`} />
+              {connected ? "Connected" : "Offline"}
+            </span>
+            <button onClick={() => runMockAction("kill")} disabled={mockAlive === false || mockAction !== null}
+              className="flex items-center gap-1.5 rounded-lg border border-[rgba(239,68,68,0.25)] bg-[rgba(239,68,68,0.08)] px-3 py-1.5 text-[10px] font-medium text-[#fca5a5] transition hover:bg-[rgba(239,68,68,0.15)] disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ fontFamily: "'Fira Code', monospace" }}>
+              <Power size={12} />{mockAction === "kill" ? "..." : "Kill Mock"}
             </button>
-            <button
-              onClick={() => runMockAction("revive")}
-              disabled={mockAlive !== false || mockAction !== null}
-              className="flex min-h-10 items-center gap-2 rounded-xl border border-[rgba(57,214,189,0.25)] bg-[rgba(57,214,189,0.1)] px-3 text-[10px] font-medium uppercase tracking-[0.08em] text-[#8cf2df] transition duration-200 hover:bg-[rgba(57,214,189,0.18)] disabled:cursor-not-allowed disabled:opacity-40"
-              style={{ fontFamily: "'Fira Code', monospace" }}
-            >
-              <RotateCcw size={14} />
-              {mockAction === "revive" ? "Restoring" : "Revive"}
+            <button onClick={() => runMockAction("revive")} disabled={mockAlive !== false || mockAction !== null}
+              className="flex items-center gap-1.5 rounded-lg border border-[rgba(34,197,94,0.25)] bg-[rgba(34,197,94,0.08)] px-3 py-1.5 text-[10px] font-medium text-[#86efac] transition hover:bg-[rgba(34,197,94,0.15)] disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ fontFamily: "'Fira Code', monospace" }}>
+              <RotateCcw size={12} />{mockAction === "revive" ? "..." : "Revive"}
             </button>
-            <button
-              onClick={toggleActivity}
-              aria-label={rightPanelOpen ? "Hide activity ledger" : "Show activity ledger"}
-              className="flex min-h-10 items-center gap-2 rounded-xl border border-[rgba(174,219,255,0.12)] bg-[rgba(255,255,255,0.035)] px-3 text-[11px] font-medium text-[#a9bed0] transition duration-200 hover:border-[rgba(125,239,255,0.32)] hover:bg-[rgba(93,232,255,0.08)] hover:text-[#e9fbff]"
-              style={{ fontFamily: "'Fira Code', monospace" }}
-            >
-              {rightPanelOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
-              <span className="hidden sm:inline">Activity</span>
+            <button onClick={() => setRightPanelOpen((p) => !p)}
+              className="flex items-center gap-1.5 rounded-lg border border-[rgba(174,219,255,0.1)] px-3 py-1.5 text-[10px] text-[#94a3b8] transition hover:border-[rgba(174,219,255,0.25)]"
+              style={{ fontFamily: "'Fira Code', monospace" }}>
+              {rightPanelOpen ? <PanelRightClose size={12} /> : <PanelRightOpen size={12} />}Events
             </button>
           </div>
-          {actionError && <p className="basis-full text-right text-[11px] text-[#ff9aaa]">{actionError}</p>}
+          {actionError && <p className="basis-full text-right text-[10px] text-[#fca5a5]">{actionError}</p>}
         </header>
 
+        {/* KPI bar */}
         <section className="reveal reveal-delay-1 shrink-0">
           <KpiBar networkStatus={networkStatus} providers={liveProviders} />
         </section>
 
-        <div className="reveal reveal-delay-2 relative flex min-h-0 flex-1 gap-3">
-          {activeView === "architecture" ? (
-            <section className="architecture-shell liquid-glass">
-              <ArchitecturePanel />
-            </section>
-          ) : (
-            <>
-          <section className="network-stage liquid-glass data-grid-fade relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.5rem]">
-            <div className="relative z-10 flex flex-wrap items-start justify-between gap-3 border-b border-[rgba(174,219,255,0.08)] px-4 py-3.5 md:px-5">
-              <div>
-                <div className="mb-1 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#8fb4ca]" style={{ fontFamily: "'Fira Code', monospace" }}>
-                  <CircleDot size={12} className="text-[#5de8ff]" />
-                  Live topology
-                </div>
-                <h2 className="text-sm font-semibold text-[#e6f3fb]">Sources converge, normalize, and persist.</h2>
-              </div>
-              <div className="flex items-center gap-2 rounded-xl border border-[rgba(174,219,255,0.1)] bg-[rgba(5,14,30,0.3)] px-3 py-2">
-                <Activity size={14} className="text-[#39d6bd]" />
-                <span className="text-[10px] uppercase tracking-[0.13em] text-[#a6bed0]" style={{ fontFamily: "'Fira Code', monospace" }}>
-                  {liveProviders.length} providers observed
-                </span>
-              </div>
-            </div>
-            <div className="relative min-h-[390px] flex-1">
-              <NetworkCanvas providers={liveProviders} networkStatus={networkStatus} />
-            </div>
-            <div className="relative z-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[rgba(174,219,255,0.08)] bg-[rgba(5,13,26,0.35)] px-4 py-2.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#7890a8] md:px-5" style={{ fontFamily: "'Fira Code', monospace" }}>
-              <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#5de8ff]" />Ingest</span>
-              <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#39d6bd]" />Standardize</span>
-              <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#aa96ff]" />Protect</span>
-              <span className="ml-auto hidden text-[#9eb7c9] lg:block">Drag to orbit · scroll to zoom</span>
-            </div>
+        {/* Main content */}
+        <div className="reveal reveal-delay-2 relative flex min-h-0 flex-1 gap-2">
+          <section className="liquid-glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.5rem]">
+            {activeView === "architecture-detail" ? <ArchitecturePanel /> : <ArchitectureFlow />}
           </section>
-            </>
-          )}
 
           {rightPanelOpen && (
-            <aside className="absolute inset-0 z-30 overflow-hidden rounded-[1.5rem] 2xl:static 2xl:w-[22rem] 2xl:shrink-0"
-              style={{ background: "#060d18", border: "1px solid rgba(174,219,255,0.1)" }}>
+            <aside className="shrink-0 overflow-hidden rounded-[1.5rem]" style={{ width: 340, background: "#060d18", border: "1px solid rgba(174,219,255,0.1)" }}>
               <EventFeed events={events} />
             </aside>
           )}
         </div>
 
-        <footer className="flex shrink-0 items-center justify-between px-1 text-[10px] uppercase tracking-[0.15em] text-[#60748c]" style={{ fontFamily: "'Fira Code', monospace" }}>
-          <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#39d6bd]" />Live ingestion fabric</span>
-          <span>Resilynx / sandbox</span>
+        {/* Footer */}
+        <footer className="flex shrink-0 items-center justify-between px-1 text-[9px] uppercase tracking-[0.12em] text-[#475569]" style={{ fontFamily: "'Fira Code', monospace" }}>
+          <span className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[#22c55e]" />Data flowing</span>
+          <span>Resilynx v0.0.1</span>
         </footer>
       </main>
     </div>

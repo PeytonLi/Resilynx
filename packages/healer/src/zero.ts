@@ -125,7 +125,7 @@ export class ZeroAgentRunner implements ZeroDiscoveryRunner {
   private readonly runZero: (args: string[]) => Promise<string>;
 
   constructor(options: ZeroAgentRunnerOptions = {}) {
-    this.maxPerCallUsd = options.maxPerCallUsd ?? Number(process.env.ZERO_MAX_PER_CALL_USD ?? "0.05");
+    this.maxPerCallUsd = options.maxPerCallUsd ?? Number(process.env.ZERO_MAX_PER_CALL_USD ?? "0.10");
     this.runZero = options.runZero ?? zero;
   }
 
@@ -161,7 +161,7 @@ export class ZeroAgentRunner implements ZeroDiscoveryRunner {
     const details: GetOutput = JSON.parse(getRaw);
 
     // Step 3: construct registry entry
-    const costUsd = parseFloat(details.displayCostAmount || best.cost.amount || "0.05");
+    const costUsd = parseFloat(details.displayCostAmount || best.cost.amount || "0.10");
     if (!Number.isFinite(costUsd) || costUsd > this.maxPerCallUsd) {
       throw new Error(`Zero.xyz backup ${details.name} costs $${costUsd}/call, exceeds max $${this.maxPerCallUsd}`);
     }
