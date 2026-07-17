@@ -1,127 +1,134 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { WsPayload, NetworkStatus } from "@resilynx/contracts";
 
-const STATUS_BADGE: Record<NetworkStatus, string> = {
+const STATUS_COLOR: Record<NetworkStatus, string> = {
   stable: "#22c55e",
   degraded: "#f59e0b",
   healing: "#ef4444",
   restored: "#22c55e",
 };
 
+const FILTERS = ["All", "Stable", "Degraded", "Healing"] as const;
+type FilterTab = (typeof FILTERS)[number];
+
 interface Props {
   events: WsPayload[];
 }
 
+function formatTime(ts: string) {
+  return new Date(ts).toLocaleTimeString();
+}
+
 export function EventFeed({ events }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [filter, setFilter] = useState<FilterTab>("All");
+
+  const filtered =
+    filter === "All"
+      ? events
+      : filter === "Stable"
+        ? events.filter((e) => e.status === "stable" || e.status === "restored")
+        : filter === "Degraded"
+          ? events.filter((e) => e.status === "degraded")
+          : events.filter((e) => e.status === "healing");
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [events.length]);
+  }, [filtered.length]);
 
   return (
-    <div
-      style={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        background: "#0f0f1a",
-      }}
-    >
+    <div className="flex flex-col h-full" style={{ background: "rgba(15,15,26,0.98)" }}>
+      {/* Header */}
       <div
-        style={{
-          padding: "12px 16px",
-          borderBottom: "1px solid #1e293b",
-          fontSize: "13px",
-          fontWeight: 600,
-          color: "#94a3b8",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-        }}
+        className="px-4 py-3 border-b flex items-center justify-between shrink-0"
+        style={{ borderColor: "rgba(255,255,255,0.06)" }}
       >
-        Event Feed
-        <span style={{ marginLeft: 8, color: "#475569" }}>
-          ({events.length})
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-semibold text-[#94a3b8] uppercase tracking-wider">
+            Event Feed
+          </span>
+          <span className="text-[11px] text-[#475569] tabular-nums" style={{ fontFamily: "'Fira Code', monospace" }}>
+            ({events.length})
+          </span>
+        </div>
       </div>
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: "8px 0",
-        }}
-      >
-        {events.length === 0 && (
-          <div
+
+      {/* Filter tabs */}
+      <div className="flex gap-1 px-3 py-2 shrink-0 border-b border-[rgba(255,255,255,0.04)]">
+        {FILTERS.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setFilter(tab)}
+            className="text-[11px] px-2.5 py-1 rounded transition-colors"
             style={{
-              padding: "24px 16px",
-              color: "#475569",
-              fontSize: "13px",
-              textAlign: "center",
+              fontFamily: "'Fira Code', monospace",
+              background: filter === tab ? "rgba(0,255,255,0.1)" : "transparent",
+              color: filter === tab ? "#00ffff" : "#475569",
+              border: filter === tab ? "1px solid rgba(0,255,255,0.2)" : "1px solid transparent",
             }}
           >
-            Waiting for events…
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Scrollable list */}
+      <div className="flex-1 overflow-y-auto px-2 py-1">
+        {filtered.length === 0 && (
+          <div className="py-8 text-[13px] text-[#475569] text-center">
+            {events.length === 0 ? "Waiting for events…" : "No matching events"}
           </div>
         )}
-        {events.map((e, i) => (
+
+        {filtered.map((e, i) => (
           <div
             key={`${e.nodeId}-${e.timestamp}-${i}`}
+            className="px-3 py-2.5 mb-1 rounded-md"
             style={{
-              padding: "10px 16px",
-              borderBottom: "1px solid #1e293b33",
-              fontSize: "12px",
-              lineHeight: 1.5,
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.04)",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: 3,
-              }}
-            >
+            {/* Row 1: node + status badge + time */}
+            <div className="flex items-center gap-2 mb-1">
               <span
-                style={{
-                  display: "inline-block",
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: STATUS_BADGE[e.status],
-                  flexShrink: 0,
-                }}
+                className="shrink-0 w-2 h-2 rounded-full"
+                style={{ background: STATUS_COLOR[e.status] }}
               />
-              <span style={{ fontWeight: 600, color: "#e2e8f0" }}>
+              <span className="text-[12px] font-semibold text-[#e2e8f0] truncate">
                 {e.nodeId}
               </span>
               <span
+                className="text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0"
                 style={{
-                  fontSize: "11px",
-                  padding: "1px 6px",
-                  borderRadius: 3,
-                  background: `${STATUS_BADGE[e.status]}22`,
-                  color: STATUS_BADGE[e.status],
-                  fontWeight: 500,
+                  background: `${STATUS_COLOR[e.status]}22`,
+                  color: STATUS_COLOR[e.status],
+                  fontFamily: "'Fira Code', monospace",
                 }}
               >
                 {e.status}
               </span>
+              <span className="ml-auto text-[10px] text-[#475569] shrink-0" style={{ fontFamily: "'Fira Code', monospace" }}>
+                {formatTime(e.timestamp)}
+              </span>
             </div>
+
+            {/* Row 2: message */}
             {e.message && (
-              <div style={{ color: "#94a3b8", marginBottom: 2 }}>
-                {e.message}
-              </div>
+              <div className="text-[11px] text-[#94a3b8] mb-1">{e.message}</div>
             )}
+
+            {/* Row 3: agent thought trail (indented, monospace) */}
             {e.agentState && (
-              <div style={{ color: "#64748b", fontSize: "11px" }}>
+              <div
+                className="text-[10px] text-[#64748b] pl-3 border-l border-[rgba(255,255,255,0.06)] ml-1"
+                style={{ fontFamily: "'Fira Code', monospace" }}
+              >
                 agent: {e.agentState}
               </div>
             )}
-            <div style={{ color: "#475569", fontSize: "10px", marginTop: 2 }}>
-              {new Date(e.timestamp).toLocaleTimeString()}
-            </div>
           </div>
         ))}
         <div ref={bottomRef} />

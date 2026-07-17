@@ -58,5 +58,20 @@
     },
     "priority": 4,
     "enabled": true
+  },
+  {
+    "id": "mock-grid-entsoe-backup",
+    "displayName": "ENTSO-E Grid Frequency (Backup)",
+    "endpoint": "https://transparency.entsoe.eu/api",
+    "authMode": "zeroxyz",
+    "pollIntervalMs": 30000,
+    "fieldMapping": {
+      "metric": "grid_frequency",
+      "value": "$reading.frequency",
+      "unit": "Hz",
+      "timestamp": "$reading.ts"
+    },
+    "priority": 5,
+    "enabled": true
   }
 ]

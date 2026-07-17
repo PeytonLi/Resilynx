@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { Sidebar } from "@/components/Sidebar";
+import { KpiBar } from "@/components/KpiBar";
 import { EventFeed } from "@/components/EventFeed";
-import { ReadingsPanel } from "@/components/ReadingsPanel";
 import { providers } from "@/lib/providers";
 import type { ProviderRegistryEntry } from "@resilynx/contracts";
+import { X } from "lucide-react";
 
 const NetworkCanvas = dynamic(
   () => import("@/components/NetworkCanvas").then((mod) => mod.NetworkCanvas),
@@ -15,21 +17,23 @@ const NetworkCanvas = dynamic(
 
 export default function Home() {
   const { networkStatus, events, connected } = useWebSocket();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeView, setActiveView] = useState("network");
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [mockAlive, setMockAlive] = useState<boolean | null>(null);
   const [liveProviders, setLiveProviders] = useState<ProviderRegistryEntry[]>(providers);
-  const [showReadings, setShowReadings] = useState(false);
 
   useEffect(() => {
     fetch("http://localhost:8080/mock/status")
-      .then(r => r.json())
-      .then(d => setMockAlive(d.alive))
+      .then((r) => r.json())
+      .then((d) => setMockAlive(d.alive))
       .catch(() => setMockAlive(false));
   }, []);
 
   useEffect(() => {
     fetch("http://localhost:8080/providers")
-      .then(r => r.json())
-      .then(d => setLiveProviders(d))
+      .then((r) => r.json())
+      .then((d) => setLiveProviders(d))
       .catch(() => {});
   }, []);
 
@@ -43,83 +47,100 @@ export default function Home() {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#0a0a0f" }}>
-      <header
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 10,
-          padding: "12px 24px",
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          background: "linear-gradient(180deg, #0a0a0fdd 60%, transparent)",
-          pointerEvents: "none",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "18px",
-            fontWeight: 700,
-            color: "#e2e8f0",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          Resilynx — Provider Network Sandbox
-        </h1>
-        <span
-          style={{
-            fontSize: "12px",
-            padding: "2px 10px",
-            borderRadius: 999,
-            background: connected ? "#22c55e22" : "#ef444422",
-            color: connected ? "#22c55e" : "#ef4444",
-            fontWeight: 500,
-          }}
-        >
-          {connected ? "Connected" : "Disconnected"}
-        </span>
-      </header>
+    <div
+      className="flex h-screen"
+      style={{ background: "linear-gradient(180deg, #0a0a0f 0%, #020203 100%)" }}
+    >
+      {/* Sidebar */}
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed((p) => !p)}
+        activeView={activeView}
+        onViewChange={setActiveView}
+      />
 
-      <div style={{
-        position: "absolute", top: 50, left: 0, right: 0, zIndex: 10,
-        padding: "8px 24px", display: "flex", gap: 12, alignItems: "center",
-        pointerEvents: "auto"
-      }}>
-        <button onClick={handleKill} disabled={mockAlive === false}
-          style={{ padding: "6px 16px", borderRadius: 6, border: "none",
-            background: mockAlive === false ? "#334155" : "#dc2626",
-            color: "#fff", cursor: mockAlive === false ? "default" : "pointer",
-            fontSize: "13px", fontWeight: 600 }}>
-          Kill Mock Grid
-        </button>
-        <button onClick={handleRevive} disabled={mockAlive === true || mockAlive === null}
-          style={{ padding: "6px 16px", borderRadius: 6, border: "none",
-            background: mockAlive === true ? "#334155" : "#16a34a",
-            color: "#fff", cursor: mockAlive === true ? "default" : "pointer",
-            fontSize: "13px", fontWeight: 600 }}>
-          Revive Mock Grid
-        </button>
-        <button onClick={() => setShowReadings(!showReadings)}
-          style={{ padding: "6px 16px", borderRadius: 6, border: "1px solid #334155",
-            background: "transparent", color: "#94a3b8", cursor: "pointer",
-            fontSize: "13px" }}>
-          {showReadings ? "Events" : "Readings"}
-        </button>
-      </div>
+      {/* Main content */}
+      <main className="flex-1 flex flex-col min-w-0">
+        {/* Top bar: KPI + actions */}
+        <div className="flex items-end gap-2">
+          <div className="flex-1"><KpiBar networkStatus={networkStatus} /></div>
+          {/* Connection status + mock controls */}
+          <div className="flex items-center gap-2 px-3 py-2 shrink-0 self-center">
+            <span
+              className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+              style={{
+                fontFamily: "'Fira Code', monospace",
+                background: connected ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+                color: connected ? "#22c55e" : "#ef4444",
+              }}
+            >
+              {connected ? "Connected" : "Disconnected"}
+            </span>
+            <button
+              onClick={handleKill}
+              disabled={mockAlive === false}
+              className="text-[11px] px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                fontFamily: "'Fira Code', monospace",
+                background: mockAlive === false ? "rgba(255,255,255,0.05)" : "rgba(239,68,68,0.2)",
+                color: mockAlive === false ? "#475569" : "#ef4444",
+                border: mockAlive === false ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(239,68,68,0.3)",
+              }}
+            >
+              Kill Mock
+            </button>
+            <button
+              onClick={handleRevive}
+              disabled={mockAlive === true || mockAlive === null}
+              className="text-[11px] px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                fontFamily: "'Fira Code', monospace",
+                background: mockAlive === true ? "rgba(255,255,255,0.05)" : "rgba(34,197,94,0.2)",
+                color: mockAlive === true ? "#475569" : "#22c55e",
+                border: mockAlive === true ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(34,197,94,0.3)",
+              }}
+            >
+              Revive Mock
+            </button>
+            <button
+              onClick={() => setRightPanelOpen((p) => !p)}
+              className="text-[11px] px-2.5 py-1.5 rounded-lg font-medium border border-[rgba(255,255,255,0.1)] text-[#94a3b8] hover:text-[#e2e8f0] hover:border-[rgba(255,255,255,0.2)] transition-colors"
+              style={{ fontFamily: "'Fira Code', monospace" }}
+            >
+              {rightPanelOpen ? "Hide" : "Panel"}
+            </button>
+          </div>
+        </div>
 
-      <div style={{ flex: "0 0 70%", position: "relative" }}>
-        <NetworkCanvas
-          providers={liveProviders}
-          networkStatus={networkStatus}
-        />
-      </div>
+        {/* Canvas + right panel */}
+        <div className="flex-1 flex min-h-0">
+          <div className="flex-1 relative">
+            <NetworkCanvas providers={liveProviders} networkStatus={networkStatus} />
+          </div>
 
-      <div style={{ flex: "0 0 30%", borderLeft: "1px solid #1e293b" }}>
-        {showReadings ? <ReadingsPanel /> : <EventFeed events={events} />}
-      </div>
+          {rightPanelOpen && (
+            <div
+              className="w-80 shrink-0 border-l h-full"
+              style={{
+                borderColor: "rgba(255,255,255,0.08)",
+                background: "rgba(10,10,15,0.95)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              {/* Close button */}
+              <div className="flex justify-end px-3 pt-2">
+                <button
+                  onClick={() => setRightPanelOpen(false)}
+                  className="p-1 rounded text-[#475569] hover:text-[#94a3b8] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <EventFeed events={events} />
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
