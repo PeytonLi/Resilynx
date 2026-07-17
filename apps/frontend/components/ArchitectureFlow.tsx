@@ -60,7 +60,7 @@ function ProviderCard({ def, state }: { def: ProviderDef; state?: NodeState }) {
   const color = statusColor(state?.status);
   return (
     <div
-      className="relative rounded-xl overflow-hidden transition-all duration-500"
+      className="architecture-flow__provider relative rounded-xl overflow-hidden transition-all duration-500"
       style={{
         background: "rgba(255,255,255,0.03)",
         border: `1px solid ${color}30`,
@@ -71,7 +71,7 @@ function ProviderCard({ def, state }: { def: ProviderDef; state?: NodeState }) {
       <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: color }} />
 
       <div className="px-4 py-3">
-        <div className="flex items-center justify-between mb-1">
+        <div className="architecture-flow__provider-row flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <StatusDot status={state?.status} />
             <span className="text-[11px] font-semibold text-[#e2e8f0]" style={{ fontFamily: "'Fira Code', monospace" }}>
@@ -143,7 +143,7 @@ export function ArchitectureFlow() {
   const justRestored = mockState?.status === "restored" && restoreTime !== null;
 
   return (
-    <div className="flex h-full flex-col" style={{ background: "#060d18" }}>
+    <div className="architecture-flow flex h-full flex-col" style={{ background: "#060d18" }}>
       {/* Header */}
       <div className="shrink-0 px-6 py-4 flex items-center justify-between border-b" style={{ borderColor: "rgba(174,219,255,0.06)" }}>
         <div className="flex items-center gap-3">
@@ -168,7 +168,7 @@ export function ArchitectureFlow() {
       {/* Architecture flow */}
       <div className="flex-1 flex flex-col min-h-0 overflow-auto">
         {/* ── HUMAN IMPACT BANNER ── */}
-        <div className="shrink-0 px-8 pt-4 pb-2">
+        <div className="hidden">
           <div className="rounded-2xl overflow-hidden transition-all duration-700"
             style={{
               background: isDegraded
@@ -257,8 +257,8 @@ export function ArchitectureFlow() {
         </div>
 
         {/* ── ARCHITECTURE FLOW ── */}
-      <div className="flex-1 flex items-center justify-center px-8 py-4 min-h-0 overflow-auto">
-        <div className="flex items-start gap-6 w-full max-w-4xl">
+      <div className="flex-1 flex items-start justify-center px-8 py-4 min-h-0 overflow-auto">
+        <div className="flex flex-wrap items-start gap-6 w-full max-w-4xl">
           {/* ── LEFT: Provider column ── */}
           <div className="flex flex-col gap-3 shrink-0" style={{ width: 240 }}>
             <div className="flex items-center gap-2 mb-1 px-1">
@@ -405,6 +405,101 @@ export function ArchitectureFlow() {
       </div>
 
       <style>{`
+        /* Layout */
+        .architecture-flow .flex { display: flex; }
+        .architecture-flow .flex-col { flex-direction: column; }
+        .architecture-flow .flex-wrap { flex-wrap: wrap; }
+        .architecture-flow .flex-1 { flex: 1; }
+        .architecture-flow .shrink-0 { flex-shrink: 0; }
+        .architecture-flow .items-center { align-items: center; }
+        .architecture-flow .items-start { align-items: flex-start; }
+        .architecture-flow .items-baseline { align-items: baseline; }
+        .architecture-flow .justify-center { justify-content: center; }
+        .architecture-flow .justify-between { justify-content: space-between; }
+        .architecture-flow .justify-end { justify-content: flex-end; }
+        .architecture-flow .gap-1\\.5 { gap: 0.375rem; }
+        .architecture-flow .gap-2 { gap: 0.5rem; }
+        .architecture-flow .gap-2\\.5 { gap: 0.625rem; }
+        .architecture-flow .gap-3 { gap: 0.75rem; }
+        .architecture-flow .gap-4 { gap: 1rem; }
+        .architecture-flow .gap-6 { gap: 1.5rem; }
+        /* Spacing */
+        .architecture-flow .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+        .architecture-flow .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .architecture-flow .px-5 { padding-left: 1.25rem; padding-right: 1.25rem; }
+        .architecture-flow .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .architecture-flow .px-8 { padding-left: 2rem; padding-right: 2rem; }
+        .architecture-flow .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .architecture-flow .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .architecture-flow .py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+        .architecture-flow .p-4 { padding: 1rem; }
+        .architecture-flow .mb-0\\.5 { margin-bottom: 0.125rem; }
+        .architecture-flow .mb-1 { margin-bottom: 0.25rem; }
+        .architecture-flow .mb-2 { margin-bottom: 0.5rem; }
+        .architecture-flow .mt-0\\.5 { margin-top: 0.125rem; }
+        .architecture-flow .mt-1 { margin-top: 0.25rem; }
+        .architecture-flow .mt-2 { margin-top: 0.5rem; }
+        .architecture-flow .-mt-1 { margin-top: -0.25rem; }
+        .architecture-flow .space-y-2 > * + * { margin-top: 0.5rem; }
+        .architecture-flow .space-y-3 > * + * { margin-top: 0.75rem; }
+        /* Sizing */
+        .architecture-flow .h-full { height: 100%; }
+        .architecture-flow .h-px { height: 1px; }
+        .architecture-flow .h-1 { height: 0.25rem; }
+        .architecture-flow .h-1\\.5 { height: 0.375rem; }
+        .architecture-flow .h-8 { height: 2rem; }
+        .architecture-flow .h-11 { height: 2.75rem; }
+        .architecture-flow .h-14 { height: 3.5rem; }
+        .architecture-flow .w-1 { width: 0.25rem; }
+        .architecture-flow .w-1\\.5 { width: 0.375rem; }
+        .architecture-flow .w-8 { width: 2rem; }
+        .architecture-flow .w-11 { width: 2.75rem; }
+        .architecture-flow .w-14 { width: 3.5rem; }
+        .architecture-flow .w-full { width: 100%; }
+        .architecture-flow .max-w-4xl { max-width: 56rem; }
+        .architecture-flow .min-h-0 { min-height: 0; }
+        .architecture-flow .min-w-0 { min-width: 0; }
+        /* Visual */
+        .architecture-flow .rounded-xl { border-radius: 0.75rem; }
+        .architecture-flow .rounded-2xl { border-radius: 1rem; }
+        .architecture-flow .rounded-full { border-radius: 50%; }
+        .architecture-flow .rounded-lg { border-radius: 0.5rem; }
+        .architecture-flow .overflow-hidden { overflow: hidden; }
+        .architecture-flow .overflow-auto { overflow: auto; }
+        .architecture-flow .overflow-y-auto { overflow-y: auto; }
+        .architecture-flow .border-b { border-bottom-width: 1px; border-bottom-style: solid; }
+        .architecture-flow .divide-y > * + * { border-top: 1px solid rgba(174,219,255,0.04); }
+        /* Position */
+        .architecture-flow .relative { position: relative; }
+        .architecture-flow .absolute { position: absolute; }
+        .architecture-flow .left-0 { left: 0; }
+        .architecture-flow .top-0 { top: 0; }
+        .architecture-flow .bottom-0 { bottom: 0; }
+        .architecture-flow .right-0 { right: 0; }
+        .architecture-flow .-translate-y-1\\/2 { transform: translateY(-50%); }
+        /* Typography */
+        .architecture-flow .text-\\[8px\\] { font-size: 0.5rem; }
+        .architecture-flow .text-\\[9px\\] { font-size: 0.5625rem; }
+        .architecture-flow .text-\\[10px\\] { font-size: 0.625rem; }
+        .architecture-flow .text-\\[11px\\] { font-size: 0.688rem; }
+        .architecture-flow .text-\\[13px\\] { font-size: 0.8125rem; }
+        .architecture-flow .text-lg { font-size: 1.125rem; }
+        .architecture-flow .font-semibold { font-weight: 600; }
+        .architecture-flow .font-bold { font-weight: 700; }
+        .architecture-flow .font-medium { font-weight: 500; }
+        .architecture-flow .uppercase { text-transform: uppercase; }
+        .architecture-flow .tracking-\\[0\\.06em\\] { letter-spacing: 0.06em; }
+        .architecture-flow .tracking-\\[0\\.1em\\] { letter-spacing: 0.1em; }
+        .architecture-flow .leading-relaxed { line-height: 1.625; }
+        .architecture-flow .tabular-nums { font-variant-numeric: tabular-nums; }
+        .architecture-flow .text-left { text-align: left; }
+        .architecture-flow .text-center { text-align: center; }
+        .architecture-flow .hidden { display: none; }
+        .architecture-flow .ml-auto { margin-left: auto; }
+        .architecture-flow .transition-all { transition-property: all; }
+        .architecture-flow .duration-500 { transition-duration: 0.5s; }
+        .architecture-flow .duration-700 { transition-duration: 0.7s; }
+
         @keyframes flowDot {
           0% { left: 0; opacity: 1; }
           80% { left: 36px; opacity: 0.3; }

@@ -14,3 +14,4 @@ config/nexla-resources.json
 .pi-subagents/
 .tokensave/
 bun.lock
+.gstack/
