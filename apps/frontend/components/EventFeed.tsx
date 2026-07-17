@@ -36,7 +36,7 @@ export function EventFeed({ events }: Props) {
   }, [filtered.length]);
 
   return (
-    <div className="relative flex h-full flex-col bg-[rgba(7,17,33,0.62)]">
+    <div className="activity-panel relative flex h-full flex-col bg-[rgba(7,17,33,0.62)]">
       <div className="shrink-0 border-b border-[rgba(174,219,255,0.09)] px-4 py-4">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl border border-[rgba(170,150,255,0.24)] bg-[rgba(170,150,255,0.1)] text-[#c2b6ff]">
@@ -76,7 +76,7 @@ export function EventFeed({ events }: Props) {
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {filtered.length === 0 && (
-          <div className="flex h-full min-h-48 flex-col items-center justify-center px-5 text-center">
+          <div className="activity-empty flex h-full min-h-48 flex-col items-center justify-center px-5 text-center">
             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(93,232,255,0.16)] bg-[rgba(93,232,255,0.06)] text-[#76ecff]">
               <Radio size={18} />
             </div>

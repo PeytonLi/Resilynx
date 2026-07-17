@@ -533,6 +533,216 @@ button:focus-visible {
 .app-shell > main > div:nth-of-type(1) > aside > div:first-child { position: absolute; z-index: 20; top: 0.75rem; right: 0.75rem; }
 .app-shell > main > div:nth-of-type(1) > aside > div:last-child { display: flex; height: 100%; flex-direction: column; background: rgba(7,17,33,0.62); }
 
+/* ── Activity ledger panel ── */
+
+.activity-panel {
+  position: relative;
+}
+
+/* Header section */
+.activity-panel > div:first-child {
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(174, 219, 255, 0.09);
+  padding: 1rem;
+}
+
+.activity-panel > div:first-child > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+/* Bot icon container */
+.activity-panel > div:first-child > div > div:first-child {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.125rem;
+  border: 1px solid rgba(170, 150, 255, 0.24);
+  border-radius: 0.75rem;
+  background: rgba(170, 150, 255, 0.1);
+  color: #c2b6ff;
+}
+
+/* Text wrapper (min-width: 0 for truncation) */
+.activity-panel > div:first-child > div > div:last-child {
+  min-width: 0;
+  flex: 1;
+}
+
+/* "Live ledger" label row */
+.activity-panel > div:first-child > div > div:last-child > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  color: #8dabbe;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+/* "Recovery activity" heading */
+.activity-panel h2 {
+  margin: 0;
+  color: #e9f5fc;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Event count badge */
+.activity-panel > div:first-child > div > span {
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 1px solid rgba(174, 219, 255, 0.12);
+  border-radius: 0.375rem;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.25rem 0.5rem;
+  color: #90a9bd;
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Filter tabs row */
+.activity-panel > div:nth-child(2) {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.375rem;
+  border-bottom: 1px solid rgba(174, 219, 255, 0.07);
+  padding: 0.625rem 0.75rem;
+}
+
+/* Events scroll area */
+.activity-panel > div:nth-child(3) {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+}
+
+/* Empty state container */
+.activity-empty {
+  display: flex;
+  height: 100%;
+  min-height: 12rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  text-align: center;
+}
+
+/* Empty state icon */
+.activity-empty > div:first-child {
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  border: 1px solid rgba(93, 232, 255, 0.16);
+  border-radius: 1rem;
+  background: rgba(93, 232, 255, 0.06);
+  color: #76ecff;
+}
+
+/* Empty state heading */
+.activity-empty > p:first-of-type {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #c9ddea;
+}
+
+/* Empty state subtext */
+.activity-empty > p:last-of-type {
+  margin-top: 0.25rem;
+  font-size: 0.688rem;
+  line-height: 1.625;
+  color: #70879d;
+}
+
+/* Event article entries */
+.activity-panel .event-entry {
+  margin-bottom: 0.5rem;
+  border: 1px solid rgba(174, 219, 255, 0.08);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.027);
+  padding: 0.75rem;
+  transition: border-color 200ms, background 200ms;
+}
+
+.activity-panel .event-entry:hover {
+  border-color: rgba(174, 219, 255, 0.18);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+/* Event entry inner row (status dot + nodeId + badge + time) */
+.activity-panel .event-entry > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Status dot */
+.activity-panel .event-entry > div:first-child > span:first-of-type {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+/* Node ID */
+.activity-panel .event-entry > div:first-child > span:nth-of-type(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #e7f4fc;
+}
+
+/* Status badge */
+.activity-panel .event-entry > div:first-child > span:nth-of-type(3) {
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.5625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Timestamp */
+.activity-panel .event-entry > div:first-child > time {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: #668096;
+  font-size: 0.5625rem;
+}
+
+/* Event message */
+.activity-panel .event-entry > p:first-of-type {
+  margin: 0;
+  font-size: 0.688rem;
+  line-height: 1.625;
+  color: #9ab1c4;
+}
+
+/* Agent state */
+.activity-panel .event-entry > p:last-of-type {
+  margin-top: 0.5rem;
+  border-left: 1px solid rgba(170, 150, 255, 0.34);
+  padding-left: 0.625rem;
+  color: #b9aefe;
+  font-size: 0.625rem;
+}
+
 .app-shell > main > footer {
   display: flex;
   flex: 0 0 auto;
