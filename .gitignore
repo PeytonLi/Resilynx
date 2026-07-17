@@ -1,0 +1,11 @@
+node_modules/
+.turbo/
+.next/
+dist/
+__pycache__/
+.venv/
+*.db
+.superpowers/
+.env
+.env.local
+*.log
