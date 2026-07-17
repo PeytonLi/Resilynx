@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Network, PanelLeftClose, PanelLeftOpen, Radio } from "lucide-react";
+import { Activity, Layers, Network, PanelLeftClose, PanelLeftOpen, Radio } from "lucide-react";
 
 interface Props {
   collapsed: boolean;
@@ -12,6 +12,7 @@ interface Props {
 
 const navItems = [
   { id: "network", label: "Topology", icon: Network },
+  { id: "architecture", label: "Architecture", icon: Layers },
   { id: "events", label: "Activity", icon: Activity },
 ];
 

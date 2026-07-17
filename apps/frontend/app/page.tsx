@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { Activity, CircleDot, PanelRightClose, PanelRightOpen, Power, RotateCcw, ShieldCheck, X } from "lucide-react";
+import { Activity, CircleDot, PanelRightClose, PanelRightOpen, Power, RotateCcw, X } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { Sidebar } from "@/components/Sidebar";
 import { KpiBar } from "@/components/KpiBar";
 import { EventFeed } from "@/components/EventFeed";
+import { ArchitecturePanel } from "@/components/ArchitecturePanel";
 import { providers } from "@/lib/providers";
 import type { ProviderRegistryEntry } from "@resilynx/contracts";
 
@@ -19,7 +20,7 @@ export default function Home() {
   const { networkStatus, events, connected } = useWebSocket();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeView, setActiveView] = useState("network");
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [mockAlive, setMockAlive] = useState<boolean | null>(null);
   const [liveProviders, setLiveProviders] = useState<ProviderRegistryEntry[]>(providers);
   const [mockAction, setMockAction] = useState<"kill" | "revive" | null>(null);
@@ -55,7 +56,11 @@ export default function Home() {
 
   const setView = (view: string) => {
     setActiveView(view);
-    setRightPanelOpen(view === "events");
+    if (view === "events") {
+      setRightPanelOpen(true);
+    } else if (view === "architecture") {
+      setRightPanelOpen(false);
+    }
   };
 
   const toggleActivity = () => {
@@ -79,9 +84,6 @@ export default function Home() {
       <main className="flex min-w-0 flex-1 flex-col gap-3 overflow-hidden p-2 md:p-3">
         <header className="liquid-glass reveal flex shrink-0 flex-wrap items-center justify-between gap-4 rounded-[1.35rem] px-4 py-3 md:px-5">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[rgba(125,239,255,0.3)] bg-[linear-gradient(145deg,rgba(100,235,255,0.25),rgba(38,90,142,0.16))] text-[#8df2ff] shadow-[0_0_30px_rgba(93,232,255,0.12)]">
-              <ShieldCheck size={20} strokeWidth={1.8} />
-            </div>
             <div className="min-w-0">
               <div className="mb-0.5 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#8db0c9]" style={{ fontFamily: "'Fira Code', monospace" }}>
                 <span>Autonomous resilience</span>
@@ -135,6 +137,12 @@ export default function Home() {
         </section>
 
         <div className="reveal reveal-delay-2 relative flex min-h-0 flex-1 gap-3">
+          {activeView === "architecture" ? (
+            <section className="liquid-glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.5rem]">
+              <ArchitecturePanel />
+            </section>
+          ) : (
+            <>
           <section className="network-stage liquid-glass data-grid-fade relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[1.5rem]">
             <div className="relative z-10 flex flex-wrap items-start justify-between gap-3 border-b border-[rgba(174,219,255,0.08)] px-4 py-3.5 md:px-5">
               <div>
@@ -161,6 +169,8 @@ export default function Home() {
               <span className="ml-auto hidden text-[#9eb7c9] lg:block">Drag to orbit · scroll to zoom</span>
             </div>
           </section>
+            </>
+          )}
 
           {rightPanelOpen && (
             <aside className="liquid-glass absolute inset-0 z-30 overflow-hidden rounded-[1.5rem] 2xl:static 2xl:w-[22rem] 2xl:shrink-0">

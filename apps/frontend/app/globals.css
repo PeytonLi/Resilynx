@@ -183,3 +183,379 @@ button:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* The prototype intentionally has no Tailwind build step. These component-level
+   rules keep the dashboard self-contained instead of depending on missing utility CSS. */
+.app-shell {
+  display: flex;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.app-shell > aside {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  height: calc(100svh - 1.5rem);
+  margin: 0.75rem 0 0.75rem 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: 1.35rem;
+  background: var(--glass-strong);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(22px) saturate(135%);
+}
+
+.app-shell > aside > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1rem 0.75rem;
+  border-bottom: 1px solid rgba(174, 219, 255, 0.09);
+}
+
+.app-shell > aside > div:first-child > div:first-child {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(125, 239, 255, 0.42);
+  border-radius: 0.8rem;
+  background: linear-gradient(145deg, #76edff, #3789d9);
+  color: #06101e;
+  font-family: "Fira Code", monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 0 24px rgba(93, 232, 255, 0.24);
+}
+
+.app-shell > aside > div:first-child > div:last-child { min-width: 0; }
+
+.app-shell > aside > div:first-child span:first-child {
+  display: block;
+  color: #eaf7ff;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.app-shell > aside > div:first-child span:last-child {
+  display: block;
+  margin-top: 0.1rem;
+  color: #6f8aa3;
+  font-family: "Fira Code", monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.app-shell > aside nav {
+  flex: 1;
+  padding: 0.75rem 0.5rem;
+}
+
+.app-shell > aside nav button {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: #829cb4;
+  font-size: 0.875rem;
+  text-align: left;
+  transition: 200ms ease;
+}
+
+.app-shell > aside nav button + button { margin-top: 0.25rem; }
+.app-shell > aside nav button:hover { background: rgba(255,255,255,0.045); color: #e7f5ff; }
+.app-shell > aside nav button[class*="bg-"] { border-color: rgba(93,232,255,0.24); background: rgba(93,232,255,0.1); color: #b9f7ff; }
+
+.app-shell > aside > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid rgba(174, 219, 255, 0.09);
+}
+
+.app-shell > aside > div:last-child > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  color: #758ea5;
+}
+
+.app-shell > aside > div:last-child > button,
+.icon-button {
+  display: grid;
+  min-height: 2.25rem;
+  place-items: center;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: #6e879f;
+  transition: 200ms ease;
+}
+
+.app-shell > aside > div:last-child > button:hover,
+.icon-button:hover { background: rgba(255,255,255,0.06); color: #dceefa; }
+
+.app-shell > main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+  padding: 0.75rem;
+}
+
+.app-shell > main > header {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 1.35rem;
+}
+
+.app-shell > main > header > div:first-child {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-shell > main > header > div:first-child > div:first-child {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(125,239,255,0.3);
+  border-radius: 1rem;
+  background: linear-gradient(145deg, rgba(100,235,255,0.25), rgba(38,90,142,0.16));
+  color: #8df2ff;
+  box-shadow: 0 0 30px rgba(93,232,255,0.12);
+}
+
+.app-shell > main h1 {
+  overflow: hidden;
+  margin: 0;
+  color: #edf7ff;
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-shell > main h1 + * { min-width: 0; }
+.app-shell > main > header > div:first-child > div:last-child > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.15rem;
+  color: #8db0c9;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.app-shell > main > header > div:first-child > div:last-child > div:first-child span:nth-child(2) {
+  display: inline-block;
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 50%;
+  background: var(--cyan);
+}
+
+.app-shell > main > header > div:nth-child(2) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.app-shell > main > header > div:nth-child(2) > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(126,211,168,0.15);
+  border-radius: 0.75rem;
+  background: rgba(57,214,189,0.08);
+  color: #b6cadc;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.app-shell > main button {
+  cursor: pointer;
+  font-family: "Fira Code", monospace;
+}
+
+.app-shell > main > header button {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid rgba(174,219,255,0.12);
+  border-radius: 0.75rem;
+  background: rgba(255,255,255,0.035);
+  color: #a9bed0;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: 200ms ease;
+}
+
+.app-shell > main > header button:hover { border-color: rgba(125,239,255,0.32); background: rgba(93,232,255,0.08); color: #e9fbff; }
+.app-shell > main > header button:disabled { cursor: not-allowed; opacity: 0.4; }
+.app-shell > main > header button:nth-of-type(1) { border-color: rgba(255,99,125,0.27); background: rgba(255,99,125,0.1); color: #ffacba; }
+.app-shell > main > header button:nth-of-type(2) { border-color: rgba(57,214,189,0.25); background: rgba(57,214,189,0.1); color: #8cf2df; }
+
+.app-shell > main > section > div {
+  display: flex;
+  gap: 0.625rem;
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+}
+
+.app-shell > main > section > div > div {
+  display: flex;
+  min-width: 8.25rem;
+  flex: 1;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: hidden;
+  padding: 0.75rem 0.85rem;
+  border-radius: 1rem;
+  transition: 300ms ease;
+}
+
+.app-shell > main > section > div > div:hover { transform: translateY(-2px); border-color: rgba(174,219,255,0.25); }
+.app-shell > main > section > div > div > div:first-child {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.75rem;
+}
+.app-shell > main > section > div > div > div:last-child > div:first-child { color: #7890a8; font-size: 0.56rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; }
+.app-shell > main > section > div > div > div:last-child > div:last-child { margin-top: 0.12rem; color: #edf7ff; font-family: "Fira Code", monospace; font-size: 1.25rem; font-weight: 600; }
+
+.app-shell > main > div:nth-of-type(1) {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  gap: 0.75rem;
+}
+
+.network-stage {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.5rem;
+}
+
+.network-stage > div:first-child {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(174,219,255,0.08);
+}
+
+.network-stage h2 { margin: 0; color: #e6f3fb; font-size: 0.875rem; font-weight: 600; }
+.network-stage > div:first-child > div:first-child > div:first-child { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; color: #8fb4ca; font-size: 0.625rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; }
+.network-stage > div:first-child > div:last-child { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border: 1px solid rgba(174,219,255,0.1); border-radius: 0.75rem; background: rgba(5,14,30,0.3); color: #a6bed0; font-size: 0.625rem; letter-spacing: 0.13em; text-transform: uppercase; }
+.network-stage > div:first-child svg { color: var(--teal); }
+
+.network-stage > div:nth-child(2) { position: relative; min-height: 18rem; flex: 1; }
+.network-stage > div:nth-child(2) > div { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.network-stage canvas { display: block; width: 100%; height: 100%; }
+.network-stage > div:nth-child(2) > div > div { position: absolute; z-index: 10; padding: 0.38rem 0.6rem; border: 1px solid rgba(174,219,255,0.12); border-radius: 0.5rem; background: rgba(4,14,29,0.55); color: #8ca8bc; font-family: "Fira Code", monospace; font-size: 0.56rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; backdrop-filter: blur(12px); }
+.network-stage > div:nth-child(2) > div > div:first-of-type { top: 1rem; left: 1rem; }
+.network-stage > div:nth-child(2) > div > div:last-of-type { right: 1rem; bottom: 1rem; }
+
+.network-stage > div:last-child {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 1.25rem;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid rgba(174,219,255,0.08);
+  background: rgba(5,13,26,0.35);
+  color: #7890a8;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.network-stage > div:last-child span { display: flex; align-items: center; gap: 0.5rem; }
+.network-stage > div:last-child span > span { width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--cyan); }
+.network-stage > div:last-child span:nth-child(2) > span { background: var(--teal); }
+.network-stage > div:last-child span:nth-child(3) > span { background: var(--violet); }
+.network-stage > div:last-child span:last-child { margin-left: auto; color: #9eb7c9; }
+
+.app-shell > main > div:nth-of-type(1) > aside {
+  position: absolute;
+  z-index: 30;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 1.5rem;
+}
+.app-shell > main > div:nth-of-type(1) > aside > div:first-child { position: absolute; z-index: 20; top: 0.75rem; right: 0.75rem; }
+.app-shell > main > div:nth-of-type(1) > aside > div:last-child { display: flex; height: 100%; flex-direction: column; background: rgba(7,17,33,0.62); }
+
+.app-shell > main > footer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem;
+  color: #60748c;
+  font-size: 0.625rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.app-shell > main > footer span:first-child { display: flex; align-items: center; gap: 0.5rem; }
+.app-shell > main > footer span:first-child > span { width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--teal); }
+
+@media (min-width: 1536px) {
+  .app-shell > main > div:nth-of-type(1) > aside { position: static; width: 22rem; flex: 0 0 22rem; }
+}
+
+@media (max-width: 900px) {
+  .app-shell > aside { display: none; }
+  .app-shell > main { padding: 0.65rem; }
+  .app-shell > main > header { align-items: flex-start; }
+  .app-shell > main > header > div:nth-child(2) { justify-content: flex-start; }
+  .app-shell > main > section > div > div { min-width: 7.5rem; }
+  .network-stage > div:last-child span:last-child { display: none; }
+}
