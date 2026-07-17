@@ -182,6 +182,123 @@ describe("IngestionEngine", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  it("injects current timestamp when standardization returns 'live'", async () => {
+    const provider = makeProvider();
+    const registry = { getProviders: () => [provider] };
+    const before = new Date().toISOString();
+
+    let callCount = 0;
+    const fetchImpl = jest.fn(() => {
+      callCount++;
+      if (callCount === 1) {
+        return Promise.resolve(new Response(JSON.stringify({ price: 42 }), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify({
+        providerId: provider.id,
+        metric: "test_metric",
+        value: 42,
+        unit: "USD",
+        timestamp: "live",
+      }), { status: 200 }));
+    }) as unknown as typeof fetch;
+
+    const engine = new IngestionEngine(registry, "http://localhost:5001/standardize", fetchImpl);
+    const readings: NexsetRecord[] = [];
+    engine.on("reading", (r) => readings.push(r as NexsetRecord));
+    await engine.pollOnce(provider);
+
+    expect(readings.length).toBe(1);
+    expect(readings[0].timestamp).not.toBe("live");
+    expect(new Date(readings[0].timestamp).getTime()).toBeGreaterThanOrEqual(new Date(before).getTime());
+  });
+
+  it("converts epoch ms number to ISO string", async () => {
+    const provider = makeProvider();
+    const registry = { getProviders: () => [provider] };
+
+    let callCount = 0;
+    const fetchImpl = jest.fn(() => {
+      callCount++;
+      if (callCount === 1) {
+        return Promise.resolve(new Response(JSON.stringify({ price: 42 }), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify({
+        providerId: provider.id,
+        metric: "test_metric",
+        value: 42,
+        unit: "USD",
+        timestamp: 1784312803919,
+      }), { status: 200 }));
+    }) as unknown as typeof fetch;
+
+    const engine = new IngestionEngine(registry, "http://localhost:5001/standardize", fetchImpl);
+    const readings: NexsetRecord[] = [];
+    engine.on("reading", (r) => readings.push(r as NexsetRecord));
+    await engine.pollOnce(provider);
+
+    expect(readings.length).toBe(1);
+    expect(readings[0].timestamp).toBe(new Date(1784312803919).toISOString());
+  });
+
+  it("keeps valid ISO timestamp unchanged", async () => {
+    const provider = makeProvider();
+    const registry = { getProviders: () => [provider] };
+    const iso = "2026-07-17T12:00:00.000Z";
+
+    let callCount = 0;
+    const fetchImpl = jest.fn(() => {
+      callCount++;
+      if (callCount === 1) {
+        return Promise.resolve(new Response(JSON.stringify({ price: 42 }), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify({
+        providerId: provider.id,
+        metric: "test_metric",
+        value: 42,
+        unit: "USD",
+        timestamp: iso,
+      }), { status: 200 }));
+    }) as unknown as typeof fetch;
+
+    const engine = new IngestionEngine(registry, "http://localhost:5001/standardize", fetchImpl);
+    const readings: NexsetRecord[] = [];
+    engine.on("reading", (r) => readings.push(r as NexsetRecord));
+    await engine.pollOnce(provider);
+
+    expect(readings.length).toBe(1);
+    expect(readings[0].timestamp).toBe(iso);
+  });
+
+  it("falls back to current time on unparseable timestamp string", async () => {
+    const provider = makeProvider();
+    const registry = { getProviders: () => [provider] };
+    const before = new Date().toISOString();
+
+    let callCount = 0;
+    const fetchImpl = jest.fn(() => {
+      callCount++;
+      if (callCount === 1) {
+        return Promise.resolve(new Response(JSON.stringify({ price: 42 }), { status: 200 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify({
+        providerId: provider.id,
+        metric: "test_metric",
+        value: 42,
+        unit: "USD",
+        timestamp: "not-a-date",
+      }), { status: 200 }));
+    }) as unknown as typeof fetch;
+
+    const engine = new IngestionEngine(registry, "http://localhost:5001/standardize", fetchImpl);
+    const readings: NexsetRecord[] = [];
+    engine.on("reading", (r) => readings.push(r as NexsetRecord));
+    await engine.pollOnce(provider);
+
+    expect(readings.length).toBe(1);
+    expect(readings[0].timestamp).not.toBe("not-a-date");
+    expect(new Date(readings[0].timestamp).getTime()).toBeGreaterThanOrEqual(new Date(before).getTime());
+  });
+
   it("stop() clears all timers", () => {
     const provider = makeProvider();
     const registry = { getProviders: () => [provider] };

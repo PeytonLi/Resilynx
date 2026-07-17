@@ -20,14 +20,28 @@ export class HealthMonitor extends EventEmitter {
   private readonly failureCounts = new Map<string, number>();
   private readonly healingInFlight = new Set<string>();
   private readonly seen = new Set<string>();
+  private readonly lastPollTimes = new Map<string, string>();
 
   constructor(private readonly healer: HealerLike) {
     super();
   }
 
+  getStatus(): Map<string, { status: string; lastPoll?: string }> {
+    const result = new Map<string, { status: string; lastPoll?: string }>();
+    for (const providerId of this.seen) {
+      const count = this.failureCounts.get(providerId) ?? 0;
+      result.set(providerId, {
+        status: count === 0 ? "stable" : "degraded",
+        lastPoll: this.lastPollTimes.get(providerId),
+      });
+    }
+    return result;
+  }
+
   recordFailure(failure: IngestionFailure): void {
     const count = (this.failureCounts.get(failure.providerId) ?? 0) + 1;
     this.failureCounts.set(failure.providerId, count);
+    this.lastPollTimes.set(failure.providerId, new Date().toISOString());
 
     if (count >= FAILURE_THRESHOLD && !this.healingInFlight.has(failure.providerId)) {
       this.healingInFlight.add(failure.providerId);
@@ -51,6 +65,7 @@ export class HealthMonitor extends EventEmitter {
     const firstSuccess = !this.seen.has(providerId);
     this.seen.add(providerId);
     this.failureCounts.set(providerId, 0);
+    this.lastPollTimes.set(providerId, new Date().toISOString());
     if (firstSuccess || wasDegraded) {
       this.emit("stable", providerId);
     }

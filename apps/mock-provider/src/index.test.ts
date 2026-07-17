@@ -4,14 +4,22 @@ import { handleRequest, resetForTests } from "./index";
 afterEach(() => resetForTests());
 
 describe("mock provider", () => {
-  it("GET /data returns payload with ticker, price, currency, ts", async () => {
+  it("GET /data returns payload with reading.sensor, reading.frequency, reading.voltage, reading.unit, reading.ts", async () => {
     const res = handleRequest(new Request("http://localhost/data"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(typeof body.ticker).toBe("string");
-    expect(typeof body.price).toBe("number");
-    expect(body.currency).toBe("USD");
-    expect(typeof body.ts).toBe("string");
+    expect(typeof body.reading.sensor).toBe("string");
+    expect(typeof body.reading.frequency).toBe("number");
+    expect(typeof body.reading.voltage).toBe("number");
+    expect(body.reading.unit).toBe("Hz");
+    expect(typeof body.reading.ts).toBe("string");
+  });
+
+  it("GET /status returns { alive: true } when not killed", async () => {
+    const res = handleRequest(new Request("http://localhost/status"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.alive).toBe(true);
   });
 
   it("POST /kill makes subsequent GET /data return 503", async () => {
@@ -20,6 +28,13 @@ describe("mock provider", () => {
 
     const dataRes = handleRequest(new Request("http://localhost/data"));
     expect(dataRes.status).toBe(503);
+  });
+
+  it("GET /status returns { alive: false } after kill", async () => {
+    handleRequest(new Request("http://localhost/kill", { method: "POST" }));
+    const res = handleRequest(new Request("http://localhost/status"));
+    const body = await res.json();
+    expect(body.alive).toBe(false);
   });
 
   it("POST /revive restores GET /data after a kill", async () => {
@@ -36,13 +51,13 @@ describe("mock provider", () => {
     expect(res.status).toBe(404);
   });
 
-  it("cycles through different tickers on successive calls", async () => {
-    const tickers = new Set<string>();
+  it("cycles through different sensors on successive calls", async () => {
+    const sensors = new Set<string>();
     for (let i = 0; i < 5; i++) {
       const res = handleRequest(new Request("http://localhost/data"));
       const body = await res.json();
-      tickers.add(body.ticker);
+      sensors.add(body.reading.sensor);
     }
-    expect(tickers.size).toBeGreaterThanOrEqual(2);
+    expect(sensors.size).toBeGreaterThanOrEqual(2);
   });
 });

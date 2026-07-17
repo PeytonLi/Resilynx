@@ -3,8 +3,9 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
-    "test": "turbo run test"
+    "dev": "powershell -ExecutionPolicy Bypass -File scripts/dev.ps1",
+    "test": "turbo run test",
+    "test:all": "turbo run test && cd apps/nexla-service && python -m pytest tests/ -v"
   },
   "devDependencies": {
     "turbo": "^2.3.0"

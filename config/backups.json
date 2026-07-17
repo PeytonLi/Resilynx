@@ -1,0 +1,70 @@
+{
+  "grid_frequency": [
+    {
+      "id": "mock-grid-entsoe-backup",
+      "displayName": "ENTSO-E Grid Frequency (Backup)",
+      "endpoint": "https://transparency.entsoe.eu/api",
+      "authMode": "zeroxyz",
+      "pollIntervalMs": 30000,
+      "fieldMapping": {
+        "metric": "grid_frequency",
+        "value": "$reading.frequency",
+        "unit": "Hz",
+        "timestamp": "$reading.ts"
+      },
+      "priority": 5,
+      "enabled": true
+    }
+  ],
+  "temperature": [
+    {
+      "id": "open-meteo-backup",
+      "displayName": "OpenWeatherMap (Backup)",
+      "endpoint": "https://api.openweathermap.org/data/2.5/weather?q=London",
+      "authMode": "zeroxyz",
+      "pollIntervalMs": 60000,
+      "fieldMapping": {
+        "metric": "temperature",
+        "value": "$main.temp",
+        "unit": "Kelvin",
+        "timestamp": "live"
+      },
+      "priority": 2,
+      "enabled": true
+    }
+  ],
+  "earthquake_magnitude": [
+    {
+      "id": "usgs-backup",
+      "displayName": "EMSC Earthquake Feed (Backup)",
+      "endpoint": "https://www.seismicportal.eu/fdsnws/event/1/query?limit=1&format=json",
+      "authMode": "zeroxyz",
+      "pollIntervalMs": 120000,
+      "fieldMapping": {
+        "metric": "earthquake_magnitude",
+        "value": "$features[0].magnitude",
+        "unit": "magnitude",
+        "timestamp": "$features[0].time"
+      },
+      "priority": 3,
+      "enabled": true
+    }
+  ],
+  "carbon_intensity": [
+    {
+      "id": "uk-carbon-backup",
+      "displayName": "Electricity Maps Carbon (Backup)",
+      "endpoint": "https://api.electricitymaps.com/v3/carbon-intensity/latest?zone=GB",
+      "authMode": "zeroxyz",
+      "pollIntervalMs": 60000,
+      "fieldMapping": {
+        "metric": "carbon_intensity",
+        "value": "$carbonIntensity",
+        "unit": "gCO2eq/kWh",
+        "timestamp": "$datetime"
+      },
+      "priority": 4,
+      "enabled": true
+    }
+  ]
+}

@@ -89,6 +89,22 @@ export class IngestionEngine extends EventEmitter {
       return;
     }
 
+    // Timestamp smart injection — standardization may return non-standard timestamps
+    const ts = record.timestamp;
+    if (ts === "live" || ts === "now") {
+      record.timestamp = new Date().toISOString();
+    } else if (typeof ts === "number") {
+      record.timestamp = new Date(ts).toISOString();
+    } else if (typeof ts === "string") {
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) {
+        record.timestamp = new Date().toISOString();
+      }
+      // else keep the valid ISO string
+    } else {
+      record.timestamp = new Date().toISOString();
+    }
+
     this.emit("reading", record);
   }
 
