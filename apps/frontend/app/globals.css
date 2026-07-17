@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ink-950: #050914;
+  --ink-900: #08111f;
+  --ink-800: #0d1b2c;
+  --glass: rgba(11, 24, 43, 0.58);
+  --glass-strong: rgba(8, 18, 34, 0.78);
+  --glass-border: rgba(174, 219, 255, 0.14);
+  --glass-highlight: rgba(238, 251, 255, 0.12);
+  --cyan: #5de8ff;
+  --cyan-soft: #8df2ff;
+  --teal: #39d6bd;
+  --amber: #ffba5c;
+  --red: #ff637d;
+  --violet: #aa96ff;
+  --text-primary: #edf7ff;
+  --text-secondary: #9db2c9;
+  --text-muted: #60748c;
+  --shadow-glass: 0 22px 70px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
 *,
 *::before,
 *::after {
@@ -14,33 +34,126 @@ html,
 body {
   height: 100%;
   overflow: hidden;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 18% -8%, rgba(42, 156, 196, 0.24), transparent 33rem),
+    radial-gradient(circle at 87% 100%, rgba(67, 91, 182, 0.19), transparent 34rem),
+    var(--ink-950);
   font-family: "Fira Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
-:root {
-  --bg-top: #0a0a0f;
-  --bg-bottom: #020203;
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --neon-cyan: #00ffff;
-  --neon-green: #22c55e;
-  --neon-amber: #f59e0b;
-  --neon-red: #ef4444;
-  --text-primary: #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted: #475569;
-  --surface: rgba(10, 10, 15, 0.95);
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Sidebar collapse transition */
+button:focus-visible {
+  outline: 2px solid var(--cyan-soft);
+  outline-offset: 3px;
+}
+
+.app-shell {
+  isolation: isolate;
+  background:
+    linear-gradient(rgba(153, 205, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(153, 205, 255, 0.028) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.app-shell::before,
+.app-shell::after {
+  position: fixed;
+  z-index: -1;
+  width: 36rem;
+  height: 36rem;
+  border-radius: 999px;
+  content: "";
+  filter: blur(68px);
+  pointer-events: none;
+}
+
+.app-shell::before {
+  top: -18rem;
+  right: -12rem;
+  background: rgba(55, 176, 232, 0.14);
+  animation: drift 18s ease-in-out infinite alternate;
+}
+
+.app-shell::after {
+  bottom: -24rem;
+  left: 10%;
+  background: rgba(97, 87, 220, 0.14);
+  animation: drift 23s ease-in-out infinite alternate-reverse;
+}
+
+.liquid-glass {
+  position: relative;
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.018) 34%, rgba(4, 13, 28, 0.42));
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+}
+
+.liquid-glass::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.08), transparent 22%, transparent 72%, rgba(128, 216, 255, 0.035));
+  content: "";
+  pointer-events: none;
+}
+
 .sidebar-transition {
-  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Glow utilities */
-.hover-glow:hover {
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.12);
-  transition: box-shadow 150ms ease-out;
+.reveal {
+  animation: rise-in 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reveal-delay-1 { animation-delay: 70ms; }
+.reveal-delay-2 { animation-delay: 130ms; }
+
+.status-dot {
+  box-shadow: 0 0 0 0 currentColor;
+  animation: status-ping 2.4s ease-out infinite;
+}
+
+.data-grid-fade {
+  background-image: linear-gradient(180deg, rgba(93, 232, 255, 0.08), transparent 28%);
+}
+
+.network-stage::before {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgba(93, 232, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(rgba(93, 232, 255, 0.045) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.52), transparent 60%);
+  content: "";
+  pointer-events: none;
+}
+
+.event-entry {
+  animation: rise-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes drift {
+  to { transform: translate3d(-4rem, 3rem, 0) scale(1.1); }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes status-ping {
+  0%, 38% { box-shadow: 0 0 0 0 currentColor; }
+  55%, 100% { box-shadow: 0 0 0 7px transparent; }
 }
 
 /* Scrollbar */
@@ -51,6 +164,22 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(157, 211, 245, 0.16);
   border-radius: 2px;
+}
+
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .app-shell { min-height: 100svh; overflow: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

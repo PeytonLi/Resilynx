@@ -191,8 +191,11 @@ export class SmartHealerSession implements AgentSession {
     }
     const backup = { ...candidates[0] }; // shallow clone
 
-    // ponytail: skip if backup already registered
-    if (registry.some(e => e.id === backup.id)) {
+    // ponytail: if backup already registered, re-enable it
+    const existing = registry.find(e => e.id === backup.id);
+    if (existing) {
+      existing.enabled = true;
+      this.writeRegistry(registry);
       callbacks.onTurnEnd();
       return;
     }
@@ -260,8 +263,13 @@ export class ZeroHealerSession implements AgentSession {
     try {
       callbacks.onTurnStart("discovering-backup");
       candidate = await this.zero.discover(failed);
-      if (entries.some((entry) => entry.id === candidate.id)) {
-        this.discoveryMessage = `Already registered: ${candidate.displayName}`;
+
+      // Backup already registered from a previous heal — enable it
+      const existing = entries.find((entry) => entry.id === candidate.id);
+      if (existing) {
+        existing.enabled = true;
+        this.writeRegistry(entries);
+        this.discoveryMessage = `Re-enabled existing backup: ${candidate.displayName}`;
         callbacks.onTurnEnd();
         return;
       }
@@ -275,7 +283,9 @@ export class ZeroHealerSession implements AgentSession {
     }
 
     callbacks.onTurnStart("patching-registry");
-    entries.push({ ...candidate, priority: failed.priority + 1, enabled: candidate.enabled });
+    // Always enable backup so ingestion polls it — ZeroAgentRunner sets enabled:false to avoid
+    // costly auto-polling, but the healer overrides that since healing means we NEED the backup.
+    entries.push({ ...candidate, priority: failed.priority + 1, enabled: true });
     const tempPath = `${this.registryPath}.tmp`;
     writeFileSync(tempPath, JSON.stringify(entries, null, 2) + "\n", "utf-8");
     renameSync(tempPath, this.registryPath);
@@ -285,5 +295,9 @@ export class ZeroHealerSession implements AgentSession {
   private readRegistry(): ProviderRegistryEntry[] {
     if (!existsSync(this.registryPath)) return [];
     return JSON.parse(readFileSync(this.registryPath, "utf-8")) as ProviderRegistryEntry[];
+  }
+
+  private writeRegistry(entries: ProviderRegistryEntry[]): void {
+    writeFileSync(this.registryPath, JSON.stringify(entries, null, 2) + "\n", "utf-8");
   }
 }
