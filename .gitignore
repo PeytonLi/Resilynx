@@ -10,5 +10,6 @@ __pycache__/
 .env.local
 *.log
 .worktrees/
+.pi-subagents/
 .tokensave/
 bun.lock
