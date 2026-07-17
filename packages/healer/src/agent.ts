@@ -144,3 +144,81 @@ export class SimulatedAgentSession implements AgentSession {
     };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Smart healer (reads real backups.json)
+// ---------------------------------------------------------------------------
+
+/** Reads the actual backups.json to discover a real backup provider. */
+export class SmartHealerSession implements AgentSession {
+  private readonly registryPath: string;
+  private readonly backupsPath: string;
+
+  constructor() {
+    this.registryPath = resolve("config", "providers.json");
+    this.backupsPath = resolve("config", "backups.json");
+  }
+
+  async run(prompt: string, callbacks: AgentCallbacks): Promise<void> {
+    // 1. Extract failure context
+    callbacks.onTurnStart("analysing");
+    const providerId = this.extractProviderId(prompt);
+    const errorLog = this.extractErrorLog(prompt);
+    if (!providerId) { callbacks.onTurnEnd(); return; }
+
+    // 2. Read current registry
+    callbacks.onTurnStart("reading-registry");
+    const registry = this.readRegistry();
+    const failedEntry = registry.find(e => e.id === providerId);
+    if (!failedEntry) { callbacks.onTurnEnd(); return; }
+
+    // Determine the metric type of the failed provider
+    const metric = failedEntry.fieldMapping?.metric ?? providerId;
+
+    // 3. Discover backup from backups.json
+    callbacks.onTurnStart("discovering-backup");
+    const backups = this.readBackups();
+    const candidates = backups[metric];
+    if (!candidates || candidates.length === 0) {
+      callbacks.onTurnEnd();
+      return;
+    }
+    const backup = { ...candidates[0] }; // shallow clone
+
+    // 4. Patch registry
+    callbacks.onTurnStart("patching-registry");
+    backup.priority = failedEntry.priority + 1;
+    backup.authMode = "zeroxyz";
+    backup.enabled = true;
+    registry.push(backup);
+    this.writeRegistry(registry);
+
+    callbacks.onTurnEnd();
+  }
+
+  private extractProviderId(prompt: string): string | undefined {
+    const m = prompt.match(/Provider ID:\s*(\S+)/);
+    return m?.[1];
+  }
+
+  private extractErrorLog(prompt: string): string | undefined {
+    const m = prompt.match(/Error Log:\s*(.+)/);
+    return m?.[1];
+  }
+
+  private readRegistry(): ProviderRegistryEntry[] {
+    if (!existsSync(this.registryPath)) return [];
+    const raw = readFileSync(this.registryPath, "utf-8");
+    return JSON.parse(raw) as ProviderRegistryEntry[];
+  }
+
+  private readBackups(): Record<string, ProviderRegistryEntry[]> {
+    if (!existsSync(this.backupsPath)) return {};
+    const raw = readFileSync(this.backupsPath, "utf-8");
+    return JSON.parse(raw) as Record<string, ProviderRegistryEntry[]>;
+  }
+
+  private writeRegistry(entries: ProviderRegistryEntry[]): void {
+    writeFileSync(this.registryPath, JSON.stringify(entries, null, 2) + "\n", "utf-8");
+  }
+}

@@ -20,6 +20,7 @@ import type {
 } from "@resilynx/contracts";
 import {
   SimulatedAgentSession,
+  SmartHealerSession,
   type AgentSession,
 } from "./agent";
 
@@ -102,7 +103,7 @@ export class Healer extends EventEmitter {
 
   constructor(agent?: AgentSession) {
     super();
-    this.agent = agent ?? new SimulatedAgentSession();
+    this.agent = agent ?? new SmartHealerSession();
   }
 
   /**
