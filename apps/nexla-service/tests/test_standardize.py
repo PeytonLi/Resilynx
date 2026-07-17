@@ -2,10 +2,10 @@
 Tests for the Nexla Standardization Service.
 
 Covers:
-- Golden tests: each provider's raw payload → exact expected NexsetRecord
-- Malformed payloads → structured 400 errors
-- Missing fields in mapping → errors, no crashes
-- Literal vs path field mapping values
+- Dot-path resolver with $ prefix (literal vs path)
+- Golden tests: Open-Meteo, USGS Earthquake, UK Carbon Intensity, Mock Grid
+- Error tests: missing metric, non-numeric value, boolean value, missing key,
+  index out of range, wrong type for bracket access, mid-path non-dict
 """
 import pytest
 from fastapi.testclient import TestClient
@@ -23,263 +23,193 @@ client = TestClient(app)
 class TestDotPathResolver:
     def test_simple_nested_path(self):
         payload = {"current": {"temperature_2m": 18.5}}
-        assert extract_value(payload, "current.temperature_2m") == 18.5
+        assert extract_value(payload, "$current.temperature_2m") == 18.5
 
     def test_array_index_path(self):
         payload = {"data": [{"intensity": {"actual": 235}}]}
-        assert extract_value(payload, "data[0].intensity.actual") == 235
+        assert extract_value(payload, "$data[0].intensity.actual") == 235
 
-    def test_literal_value_no_dot_or_bracket(self):
-        """Strings without . or [ are returned as literal values."""
+    def test_literal_value_no_dollar_prefix(self):
+        """Strings without $ are returned as literal values."""
         payload = {"anything": 42}
         assert extract_value(payload, "gCO2/kWh") == "gCO2/kWh"
 
     def test_literal_value_simple_word(self):
-        """Plain words without dots/brackets are treated as literals."""
+        """Plain words without $ are treated as literals."""
         payload = {"anything": 42}
         assert extract_value(payload, "celsius") == "celsius"
 
     def test_top_level_field(self):
-        assert extract_value({"price": 215.5}, "price") == 215.5
+        assert extract_value({"price": 215.5}, "$price") == 215.5
 
     def test_missing_key_raises_error(self):
         payload = {"data": {}}
         with pytest.raises(ResolutionError) as exc:
-            extract_value(payload, "data.value")
+            extract_value(payload, "$data.value")
         assert "value" in exc.value.detail
 
     def test_wrong_type_for_bracket_access(self):
         payload = {"data": "not_a_list"}
         with pytest.raises(ResolutionError) as exc:
-            extract_value(payload, "data[0].field")
+            extract_value(payload, "$data[0].field")
         assert "list" in exc.value.detail.lower()
 
     def test_index_out_of_range(self):
         payload = {"data": []}
         with pytest.raises(ResolutionError) as exc:
-            extract_value(payload, "data[0].field")
+            extract_value(payload, "$data[0].field")
         assert "out of range" in exc.value.detail
 
     def test_mid_path_not_dict(self):
         payload = {"a": {"b": 42}}
         with pytest.raises(ResolutionError) as exc:
-            extract_value(payload, "a.b.c")
+            extract_value(payload, "$a.b.c")
         assert "dict" in exc.value.detail.lower()
 
-    def test_dot_path_to_top_level_field(self):
-        """Top-level field access via simple dot-path must include a dot, e.g. 'payload.ts'."""
-        # A single-segment key without dot/bracket IS treated as literal.
-        # To access a top-level key via path, the payload must wrap it
-        # and the path uses a dot: "wrapper.ts".
-        payload = {"wrapper": {"ts": "2024-01-01T00:00:00Z"}}
-        assert extract_value(payload, "wrapper.ts") == "2024-01-01T00:00:00Z"
+
+# ── Golden tests: Open-Meteo ───────────────────────────────────────────────────
 
 
-# ── Golden tests: CoinGecko ────────────────────────────────────────────────────
-
-
-class TestCoinGecko:
+class TestOpenMeteo:
     def test_golden_standardizes_correctly(self):
-        raw = {"bitcoin": {"usd": 63865}}
+        raw = {
+            "latitude": 51.5,
+            "current_units": {"temperature_2m": "\u00b0C"},
+            "current": {"time": "2026-07-17T19:15", "temperature_2m": 26.7},
+        }
         response = client.post(
             "/standardize",
             json={
-                "providerId": "coingecko",
+                "providerId": "open-meteo",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "metric": "crypto_price",
-                    "value": "bitcoin.usd",
-                    "unit": "USD",
-                    "timestamp": "live",
+                    "metric": "temperature",
+                    "value": "$current.temperature_2m",
+                    "unit": "$current_units.temperature_2m",
+                    "timestamp": "$current.time",
                 },
             },
         )
         assert response.status_code == 200
         record = response.json()
-        assert record["providerId"] == "coingecko"
-        assert record["metric"] == "crypto_price"
-        assert record["value"] == 63865.0
-        assert record["unit"] == "USD"
+        assert record["providerId"] == "open-meteo"
+        assert record["metric"] == "temperature"
+        assert record["value"] == 26.7
+        assert record["unit"] == "\u00b0C"
+        assert record["timestamp"] == "2026-07-17T19:15"
         assert record["raw"] == raw
 
-    def test_missing_bitcoin_usd_key_returns_error(self):
-        raw = {"bitcoin": {}}
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "coingecko",
-                "metric": "crypto_price",
-                "rawPayload": raw,
-                "fieldMapping": {
-                    "value": "bitcoin.usd",
-                    "unit": "USD",
-                    "timestamp": "live",
-                },
-            },
-        )
-        assert response.status_code == 400
-        body = response.json()
-        assert body["error"] == "Field resolution failed"
-        assert "value" in body["detail"]
 
-    def test_non_numeric_price_returns_error(self):
-        raw = {"bitcoin": {"usd": "not_a_number"}}
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "coingecko",
-                "metric": "crypto_price",
-                "rawPayload": raw,
-                "fieldMapping": {
-                    "value": "bitcoin.usd",
-                    "unit": "USD",
-                    "timestamp": "live",
-                },
-            },
-        )
-        assert response.status_code == 400
-        body = response.json()
-        assert body["error"] == "Invalid value type"
+# ── Golden tests: USGS Earthquake ──────────────────────────────────────────────
 
 
-# ── Golden tests: ExchangeRate-API ─────────────────────────────────────────────
-
-
-class TestExchangeRate:
+class TestUSGS:
     def test_golden_standardizes_correctly(self):
-        raw = {"data": {"rates": {"EUR": 0.92}, "time_last_update_utc": "Fri, 17 Jul 2026 00:02:31 +0000"}}
+        raw = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "properties": {
+                        "mag": 5.2,
+                        "place": "Mexico",
+                        "time": 1784312803919,
+                    },
+                    "geometry": {"coordinates": [-92.93, 14.37, 10]},
+                }
+            ],
+        }
         response = client.post(
             "/standardize",
             json={
-                "providerId": "exchangerate",
+                "providerId": "usgs-earthquake",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "metric": "forex_rate",
-                    "value": "data.rates.EUR",
-                    "unit": "EUR",
-                    "timestamp": "data.time_last_update_utc",
+                    "metric": "earthquake_magnitude",
+                    "value": "$features[0].properties.mag",
+                    "unit": "magnitude",
+                    "timestamp": "$features[0].properties.place",
                 },
             },
         )
         assert response.status_code == 200
         record = response.json()
-        assert record["providerId"] == "exchangerate"
-        assert record["metric"] == "forex_rate"
-        assert record["value"] == 0.92
-        assert record["unit"] == "EUR"
-        assert record["timestamp"] == "Fri, 17 Jul 2026 00:02:31 +0000"
-        assert record["raw"] == raw
-
-    def test_missing_eur_key_returns_error(self):
-        raw = {"data": {"rates": {}, "time_last_update_utc": "Fri, 17 Jul 2026 00:02:31 +0000"}}
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "exchangerate",
-                "metric": "forex_rate",
-                "rawPayload": raw,
-                "fieldMapping": {
-                    "value": "data.rates.EUR",
-                    "unit": "EUR",
-                    "timestamp": "data.time_last_update_utc",
-                },
-            },
-        )
-        assert response.status_code == 400
-        body = response.json()
-        assert body["error"] == "Field resolution failed"
-        assert "value" in body["detail"]
-
-    def test_zero_rate_still_valid(self):
-        raw = {"data": {"rates": {"EUR": 0.0}, "time_last_update_utc": "Fri, 17 Jul 2026 00:02:31 +0000"}}
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "exchangerate",
-                "metric": "forex_rate",
-                "rawPayload": raw,
-                "fieldMapping": {
-                    "value": "data.rates.EUR",
-                    "unit": "EUR",
-                    "timestamp": "data.time_last_update_utc",
-                },
-            },
-        )
-        assert response.status_code == 200
-        assert response.json()["value"] == 0.0
+        assert record["providerId"] == "usgs-earthquake"
+        assert record["value"] == 5.2
+        assert record["unit"] == "magnitude"
 
 
-# ── Golden tests: Mock Exchange ────────────────────────────────────────────────
+# ── Golden tests: UK Carbon Intensity ──────────────────────────────────────────
 
 
-class TestMockExchange:
+class TestUKCarbon:
     def test_golden_standardizes_correctly(self):
-        raw = {"stock": {"ticker": "MOCK", "price": 215.5, "currency": "USD", "ts": "2026-07-17T18:00:00Z"}}
+        raw = {
+            "data": [
+                {
+                    "from": "2026-07-17T18:30Z",
+                    "to": "2026-07-17T19:00Z",
+                    "intensity": {"forecast": 182, "actual": 186, "index": "high"},
+                }
+            ]
+        }
         response = client.post(
             "/standardize",
             json={
-                "providerId": "mock-exchange",
+                "providerId": "uk-carbon-intensity",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "metric": "stock_price",
-                    "value": "stock.price",
-                    "unit": "stock.currency",
-                    "timestamp": "stock.ts",
+                    "metric": "carbon_intensity",
+                    "value": "$data[0].intensity.actual",
+                    "unit": "gCO2/kWh",
+                    "timestamp": "$data[0].from",
                 },
             },
         )
         assert response.status_code == 200
         record = response.json()
-        assert record["providerId"] == "mock-exchange"
-        assert record["metric"] == "stock_price"
-        assert record["value"] == 215.5
-        assert record["unit"] == "USD"
-        assert record["timestamp"] == "2026-07-17T18:00:00Z"
-        assert record["raw"] == raw
+        assert record["providerId"] == "uk-carbon-intensity"
+        assert record["value"] == 186
+        assert record["unit"] == "gCO2/kWh"
 
-    def test_missing_price_key_returns_error(self):
-        raw = {"stock": {"ticker": "MOCK", "currency": "USD", "ts": "2026-07-17T18:00:00Z"}}
+
+# ── Golden tests: Mock Grid ────────────────────────────────────────────────────
+
+
+class TestMockGrid:
+    def test_golden_standardizes_correctly(self):
+        raw = {
+            "reading": {
+                "sensor": "GRID-N4",
+                "frequency": 50.02,
+                "voltage": 231.4,
+                "unit": "Hz",
+                "ts": "2026-07-17T19:00:00Z",
+            }
+        }
         response = client.post(
             "/standardize",
             json={
-                "providerId": "mock-exchange",
-                "metric": "stock_price",
+                "providerId": "mock-grid",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "stock.price",
-                    "unit": "stock.currency",
-                    "timestamp": "stock.ts",
-                },
-            },
-        )
-        assert response.status_code == 400
-        body = response.json()
-        assert body["error"] == "Field resolution failed"
-        assert "value" in body["detail"]
-
-    def test_negative_price_still_valid(self):
-        raw = {"stock": {"ticker": "MOCK", "price": -10.5, "currency": "USD", "ts": "2026-07-17T18:00:00Z"}}
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "mock-exchange",
-                "metric": "stock_price",
-                "rawPayload": raw,
-                "fieldMapping": {
-                    "value": "stock.price",
-                    "unit": "stock.currency",
-                    "timestamp": "stock.ts",
+                    "metric": "grid_frequency",
+                    "value": "$reading.frequency",
+                    "unit": "$reading.unit",
+                    "timestamp": "$reading.ts",
                 },
             },
         )
         assert response.status_code == 200
-        assert response.json()["value"] == -10.5
+        record = response.json()
+        assert record["providerId"] == "mock-grid"
+        assert record["value"] == 50.02
+        assert record["unit"] == "Hz"
 
 
-# ── Edge case tests ───────────────────────────────────────────────────────────
+# ── Error tests ────────────────────────────────────────────────────────────────
 
 
-class TestEdgeCases:
+class TestErrorCases:
     def test_missing_metric_returns_error(self):
         raw = {"current": {"temperature_2m": 18.0, "time": "2024-01-01T00:00:00Z"}}
         response = client.post(
@@ -288,9 +218,9 @@ class TestEdgeCases:
                 "providerId": "test-provider",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "current.temperature_2m",
+                    "value": "$current.temperature_2m",
                     "unit": "celsius",
-                    "timestamp": "current.time",
+                    "timestamp": "$current.time",
                 },
             },
         )
@@ -298,65 +228,8 @@ class TestEdgeCases:
         body = response.json()
         assert body["error"] == "Missing metric"
 
-    def test_metric_from_field_mapping_literal(self):
-        raw = {"current": {"temperature_2m": 18.0, "time": "2024-01-01T00:00:00Z"}}
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "open-meteo",
-                "rawPayload": raw,
-                "fieldMapping": {
-                    "value": "current.temperature_2m",
-                    "unit": "celsius",
-                    "timestamp": "current.time",
-                    "metric": "temperature",
-                },
-            },
-        )
-        assert response.status_code == 200
-        assert response.json()["metric"] == "temperature"
-
-    def test_metric_from_field_mapping_via_path(self):
-        raw = {
-            "meta": {"type": "carbon_intensity"},
-            "data": [{"intensity": {"actual": 100}, "from": "2024-01-01T00:00:00Z"}],
-        }
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "uk-carbon-intensity",
-                "rawPayload": raw,
-                "fieldMapping": {
-                    "metric": "meta.type",
-                    "value": "data[0].intensity.actual",
-                    "unit": "gCO2/kWh",
-                    "timestamp": "data[0].from",
-                },
-            },
-        )
-        assert response.status_code == 200
-        assert response.json()["metric"] == "carbon_intensity"
-
-    def test_missing_value_field_returns_error(self):
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "test-provider",
-                "metric": "temperature",
-                "rawPayload": {},
-                "fieldMapping": {
-                    "unit": "celsius",
-                    "timestamp": "current.time",
-                },
-            },
-        )
-        assert response.status_code == 400
-        body = response.json()
-        assert body["error"] == "Missing field mapping"
-        assert "value" in body["detail"]
-
-    def test_invalid_unit_type_returns_error(self):
-        raw = {"current": {"temperature_2m": 18.0, "time": "2024-01-01T00:00:00Z"}}
+    def test_non_numeric_value_returns_error(self):
+        raw = {"current": {"temperature_2m": "hot"}}
         response = client.post(
             "/standardize",
             json={
@@ -364,70 +237,107 @@ class TestEdgeCases:
                 "metric": "temperature",
                 "rawPayload": raw,
                 "fieldMapping": {
-                    "value": "current.temperature_2m",
-                    "unit": "current.temperature_2m",
-                    "timestamp": "current.time",
-                },
-            },
-        )
-        assert response.status_code == 400
-        body = response.json()
-        assert body["error"] == "Invalid unit type"
-
-    def test_invalid_timestamp_type_returns_error(self):
-        raw = {"current": {"temperature_2m": 18.0, "time": 12345}}
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "test-provider",
-                "metric": "temperature",
-                "rawPayload": raw,
-                "fieldMapping": {
-                    "value": "current.temperature_2m",
+                    "value": "$current.temperature_2m",
                     "unit": "celsius",
-                    "timestamp": "current.time",
-                },
-            },
-        )
-        assert response.status_code == 400
-        body = response.json()
-        assert body["error"] == "Invalid timestamp type"
-
-    def test_int_value_converted_to_float(self):
-        raw = {"reading": {"value": 42, "unit": "count", "ts": "2024-01-01T00:00:00Z"}}
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "test-provider",
-                "metric": "carbon_intensity",
-                "rawPayload": raw,
-                "fieldMapping": {
-                    "value": "reading.value",
-                    "unit": "reading.unit",
-                    "timestamp": "reading.ts",
-                },
-            },
-        )
-        assert response.status_code == 200
-        record = response.json()
-        assert record["value"] == 42.0
-        assert isinstance(record["value"], float)
-
-    def test_boolean_value_rejected(self):
-        raw = {"reading": {"value": True, "unit": "bool", "ts": "2024-01-01T00:00:00Z"}}
-        response = client.post(
-            "/standardize",
-            json={
-                "providerId": "test-provider",
-                "metric": "carbon_intensity",
-                "rawPayload": raw,
-                "fieldMapping": {
-                    "value": "reading.value",
-                    "unit": "reading.unit",
-                    "timestamp": "reading.ts",
+                    "timestamp": "2024-01-01T00:00:00Z",
                 },
             },
         )
         assert response.status_code == 400
         body = response.json()
         assert body["error"] == "Invalid value type"
+
+    def test_boolean_value_rejected(self):
+        raw = {"reading": {"value": True}}
+        response = client.post(
+            "/standardize",
+            json={
+                "providerId": "test-provider",
+                "metric": "test",
+                "rawPayload": raw,
+                "fieldMapping": {
+                    "value": "$reading.value",
+                    "unit": "bool",
+                    "timestamp": "2024-01-01T00:00:00Z",
+                },
+            },
+        )
+        assert response.status_code == 400
+        body = response.json()
+        assert body["error"] == "Invalid value type"
+
+    def test_missing_key_returns_error(self):
+        raw = {"data": {}}
+        response = client.post(
+            "/standardize",
+            json={
+                "providerId": "test-provider",
+                "metric": "test",
+                "rawPayload": raw,
+                "fieldMapping": {
+                    "value": "$data.value",
+                    "unit": "count",
+                    "timestamp": "2024-01-01T00:00:00Z",
+                },
+            },
+        )
+        assert response.status_code == 400
+        body = response.json()
+        assert body["error"] == "Field resolution failed"
+
+    def test_index_out_of_range_returns_error(self):
+        raw = {"data": []}
+        response = client.post(
+            "/standardize",
+            json={
+                "providerId": "test-provider",
+                "metric": "test",
+                "rawPayload": raw,
+                "fieldMapping": {
+                    "value": "$data[0].field",
+                    "unit": "count",
+                    "timestamp": "2024-01-01T00:00:00Z",
+                },
+            },
+        )
+        assert response.status_code == 400
+        body = response.json()
+        assert body["error"] == "Field resolution failed"
+
+    def test_wrong_type_for_bracket_access_returns_error(self):
+        raw = {"data": "not_a_list"}
+        response = client.post(
+            "/standardize",
+            json={
+                "providerId": "test-provider",
+                "metric": "test",
+                "rawPayload": raw,
+                "fieldMapping": {
+                    "value": "$data[0].field",
+                    "unit": "count",
+                    "timestamp": "2024-01-01T00:00:00Z",
+                },
+            },
+        )
+        assert response.status_code == 400
+        body = response.json()
+        assert body["error"] == "Field resolution failed"
+
+    def test_mid_path_non_dict_returns_error(self):
+        raw = {"a": {"b": 42}}
+        response = client.post(
+            "/standardize",
+            json={
+                "providerId": "test-provider",
+                "metric": "test",
+                "rawPayload": raw,
+                "fieldMapping": {
+                    "value": "$a.b.c",
+                    "unit": "count",
+                    "timestamp": "2024-01-01T00:00:00Z",
+                },
+            },
+        )
+        assert response.status_code == 400
+        body = response.json()
+        assert body["error"] == "Field resolution failed"

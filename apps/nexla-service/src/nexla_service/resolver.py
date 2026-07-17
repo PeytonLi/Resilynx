@@ -1,10 +1,10 @@
 """
 Dot-path resolver for extracting values from nested dict/list payloads.
 
-Supports:
-- Simple paths: "current.temperature_2m"
-- Array access: "data[0].intensity.actual"
-- Literal values: pass-through strings without "." or "[" (e.g. "gCO2/kWh")
+Supports explicit dot-paths with a "$" prefix:
+- "$current.temperature_2m" resolves to nested dict values
+- "$data[0].intensity.actual" handles array indexing
+- Strings without "$" prefix are returned as literal values (e.g. "gCO2/kWh")
 """
 import re
 from typing import Any
@@ -19,21 +19,21 @@ class ResolutionError(Exception):
         super().__init__(f"{path}: {detail}")
 
 
-def _is_literal(mapping_value: str) -> bool:
-    """A mapping value may be a literal when it contains no dot or bracket."""
-    return "." not in mapping_value and "[" not in mapping_value
-
-
 def resolve_dot_path(payload: dict[str, Any], path: str) -> Any:
     """
-    Resolve a dot-path against a payload dict.
+    Resolve a path against a payload dict.
 
-    Segments are split by ".". Each segment may contain "[N]" array indexing.
-    Returns the resolved value or raises ResolutionError.
+    If ``path`` starts with ``$``, strip the prefix and resolve the remainder
+    as a dot-path (segments split by ``.``, with optional ``[N]`` array indexing).
+    If ``path`` does not start with ``$``, return it unchanged as a literal value.
+
+    Raises ``ResolutionError`` when a segment cannot be resolved (missing key,
+    index out of range, type mismatch, or malformed segment).
     """
-    if _is_literal(path):
-        return payload.get(path, path)
+    if not path.startswith("$"):
+        return path
 
+    path = path[1:]  # strip "$"
     segments = path.split(".")
     current: Any = payload
 
@@ -78,8 +78,10 @@ def resolve_dot_path(payload: dict[str, Any], path: str) -> Any:
 def extract_value(payload: dict[str, Any], path: str) -> Any:
     """
     Extract a value from a payload using dot-path resolution.
-    Returns the value directly, or raises ResolutionError.
 
-    Single-segment mappings resolve matching top-level keys, otherwise act as literals.
+    Returns the resolved value if ``path`` starts with ``$``,
+    otherwise returns ``path`` unchanged as a literal value.
+
+    Raises ``ResolutionError`` on resolution failure.
     """
     return resolve_dot_path(payload, path)
