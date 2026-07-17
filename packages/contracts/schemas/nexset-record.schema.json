@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resilynx.dev/schemas/nexset-record.schema.json",
+  "title": "NexsetRecord",
+  "type": "object",
+  "required": ["providerId", "metric", "value", "unit", "timestamp"],
+  "properties": {
+    "providerId": { "type": "string" },
+    "metric": { "type": "string" },
+    "value": { "type": "number" },
+    "unit": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "raw": { "type": "object" }
+  },
+  "additionalProperties": false
+}

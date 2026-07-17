@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resilynx.dev/schemas/ws-payload.schema.json",
+  "title": "WsPayload",
+  "type": "object",
+  "required": ["status", "nodeId", "timestamp"],
+  "properties": {
+    "status": { "type": "string", "enum": ["stable", "degraded", "healing", "restored"] },
+    "nodeId": { "type": "string" },
+    "agentState": { "type": "string" },
+    "message": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

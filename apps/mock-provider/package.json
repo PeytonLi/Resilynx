@@ -1,0 +1,17 @@
+{
+  "name": "mock-provider",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "echo \"mock-provider: bun runs TS directly, no build step\"",
+    "test": "echo \"mock-provider: no implementation yet, nothing to test (see src/index.ts TODO)\""
+  },
+  "dependencies": {
+    "@resilynx/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

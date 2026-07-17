@@ -1,0 +1,9 @@
+{
+  "name": "nexla-service",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "echo \"nexla-service: python package, no JS build step\"",
+    "test": "echo \"nexla-service: run pytest in a Python venv, see pyproject.toml\""
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resilynx.dev/schemas/provider-registry-entry.schema.json",
+  "title": "ProviderRegistryEntry",
+  "type": "object",
+  "required": [
+    "id",
+    "displayName",
+    "endpoint",
+    "authMode",
+    "pollIntervalMs",
+    "fieldMapping",
+    "priority",
+    "enabled"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "displayName": { "type": "string" },
+    "endpoint": { "type": "string", "format": "uri" },
+    "authMode": { "type": "string", "enum": ["none", "apiKey", "bearer", "zeroxyz"] },
+    "pollIntervalMs": { "type": "integer", "minimum": 1000 },
+    "fieldMapping": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "priority": { "type": "integer" },
+    "enabled": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}
