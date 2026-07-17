@@ -1,22 +1,12 @@
 # Resilynx — Demo Script
 
-## Pre-flight
-```powershell
-pnpm dev          # start all services, wait ~10s
-```
-Open `http://localhost:3000`. Verify green "GRID MONITORING: ACTIVE" banner. Confirm Architecture tab loads. Return to Dashboard.
-
 ---
-
-## Opening
 
 Most data pipelines depend on third-party APIs. When a provider changes its schema, goes offline, or returns errors, downstream systems break. The standard recovery path — notice the outage, find a backup, get credentials, write integration code — takes hours.
 
 Resilynx automates that entire loop. It detects provider failures, discovers replacement APIs through Zero.xyz, patches its own configuration, and resumes data flow — without a human touching a keyboard. The people who depend on this data never know anything went wrong. Let me walk through how it's built, then show it working.
 
 ---
-
-## Architecture
 
 *Click Architecture tab*
 
@@ -32,7 +22,7 @@ On startup, the service connects to Nexla's cloud SDK using a token stored in `.
 
 The healer wakes up and runs through four steps. First, it reads the error log and identifies which provider failed. Second, it reads the current provider registry from `config/providers.json`. Third, it maps the failed provider's metric — say, `grid_frequency` — to a search query like "real-time power grid frequency data API" and runs `zero search` through Zero.xyz's CLI. It parses the JSON response, filters to healthy GET endpoints, and runs `zero get` on the best match to pull the endpoint URL, cost, and schema. Fourth, it constructs a new registry entry with that endpoint and writes it to the config file.
 
-The Zero.xyz CLI is installed and authenticated under this account with a funded wallet. The search and get calls are free — search returns 17 results including GridPulse at 8 cents per call, and get returns the full endpoint details. The actual API call to fetch data costs money, so the discovered backup is added to the registry but the healer sets it to disabled by default to avoid burning budget on polling. The user enables it when they want live backup data.
+The Zero.xyz CLI is installed and authenticated under this account with a funded wallet. The search and get calls are free — search returns 17 results including GridPulse at 8 cents per call, and get returns the full endpoint details. The actual API call to fetch data costs money, so the discovered backup is added to the registry but the healer sets it to disabled by default to avoid burning budget on polling.
 
 The registry file is the agent's only write surface. It cannot modify source code. If the agent writes an invalid entry — bad JSON, missing fields — the registry rejects it and keeps the last valid config. Safe automation by construction.
 
@@ -41,8 +31,6 @@ If Zero.xyz is unreachable, the healer falls back to `config/backups.json`, a st
 **Persistence and broadcast.** All standardized readings go to a local SQLite database using Bun's built-in driver. Every state transition — stable, degraded, healing, restored — is published over WebSocket to a channel called `aegis-events`. The dashboard connects on page load and receives every event in real time with automatic reconnection on disconnect.
 
 ---
-
-## Live Demo
 
 *Click Dashboard*
 
@@ -74,41 +62,12 @@ The original provider comes back. The backup stays in the registry permanently �
 
 ---
 
-## What Makes This Useful
-
 **No per-provider code.** Adding a data source means adding a JSON entry with five fields: endpoint, auth mode, poll interval, field mapping, and priority. The standardization engine handles the rest. Four providers share zero lines of parsing code.
 
-**Safe automation.** The healer's edit surface is one file. A bad patch triggers validation at the registry layer and the last valid config is preserved. The agent has never seen source code.
+**Safe automation.** The healer's edit surface is one file. A bad patch triggers validation at the registry layer and the last valid config is preserved.
 
 **Observability by default.** Every heal produces a structured, timestamped event log. You can replay exactly what the agent did, in order, with the data it had at each step.
 
 **Keyless onboarding.** All three real APIs require zero credentials. Zero.xyz covers authentication for discovered backups — no API key provisioning, no secrets in the config file.
 
 **Real integrations, used concretely.** Zero.xyz is not simulated — the CLI is installed, authenticated, and calling the live index. Nexla is not a stub — the SDK connects to dataops.nexla.io on every startup and validates field mappings. Both are Python and TypeScript dependencies with version pins.
-
----
-
-## Tech Stack
-
-| Component | Runtime | What it does concretely |
-|---|---|---|
-| Ingestion engine, health monitor, WebSocket | Bun + TypeScript | Polls providers every 15-120s, counts failures, broadcasts state over `aegis-events` channel |
-| Standardization service | Python + FastAPI | `$` prefix path resolver maps any payload shape to NexsetRecord |
-| API discovery + payment | Zero.xyz CLI | `zero search` finds backup APIs, `zero get` pulls endpoint schemas, `zero fetch` pays per call |
-| Schema governance | Nexla SDK | Connects to dataops.nexla.io on startup, validates field mappings, registered as `nexla-sdk==1.0.8` |
-| Dashboard | Next.js + React | WebSocket client, impact banner, architecture flow, event feed |
-| Persistence | Bun SQLite | `readings` and `events` tables, `recentReadings()` and `recentEvents()` queries |
-| Monorepo | Turborepo + pnpm | `pnpm dev` starts all 4 services, `pnpm test` runs 141 tests across Bun + pytest |
-
----
-
-## Troubleshooting
-
-| Issue | Fix |
-|---|---|
-| Backend not responding | Verify `pnpm dev` is running, port 8080 |
-| Mock kill doesn't trigger | Max wait: 45s (3 polls × 15s) |
-| Zero.xyz returns no results | Static `backups.json` fallback kicks in — same dashboard behavior |
-| Nexla connection failed | Check `.env` has correct `NEXLA_API_URL` and `NEXLA_TOKEN` — instance URL is `dataops.nexla.io/nexla-api` |
-| Impact banner not updating | Refresh page, verify WebSocket "Connected" indicator in header |
-| Build errors | `rm -rf apps/frontend/.next .turbo && pnpm build` |
