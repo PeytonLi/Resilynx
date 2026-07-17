@@ -1,7 +1,8 @@
 import { describe, expect, it, afterEach } from "bun:test";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { SmartHealerSession, type AgentCallbacks } from "./agent";
+import { mkdirSync, readFileSync, rmSync, writeFileSync, mkdtempSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { SmartHealerSession, ZeroHealerSession, type AgentCallbacks } from "./agent";
 import type { ProviderRegistryEntry } from "./index";
 
 // ---------------------------------------------------------------------------
@@ -210,5 +211,347 @@ describe("SmartHealerSession", () => {
       "reading-registry",
       "discovering-backup",
     ]);
+  });
+
+  // --- Backup entry structure validation ---
+
+  it("backup entry has correct fieldMapping from backups.json", async () => {
+    tmpDir = mkdtempSync(join(tmpdir(), "healer-test-"));
+    originalCwd = process.cwd();
+    process.chdir(tmpDir);
+    mkdirSync(join(tmpDir, "config"), { recursive: true });
+
+    const providers: ProviderRegistryEntry[] = [
+      {
+        id: "mock-grid",
+        displayName: "Mock Grid Provider",
+        endpoint: "https://grid.example.com/api",
+        authMode: "none",
+        pollIntervalMs: 30000,
+        fieldMapping: { metric: "grid_frequency", value: "freq", unit: "Hz", timestamp: "ts" },
+        priority: 5,
+        enabled: true,
+      },
+    ];
+
+    const expectedMapping = {
+      metric: "grid_frequency",
+      value: "freq_hz",
+      unit: "mHz",
+      timestamp: "time_ms",
+    };
+
+    const backups: Record<string, ProviderRegistryEntry[]> = {
+      grid_frequency: [
+        {
+          id: "mock-grid-backup",
+          displayName: "Backup Grid",
+          endpoint: "https://backup.example.com/api",
+          authMode: "none",
+          pollIntervalMs: 60000,
+          fieldMapping: expectedMapping,
+          priority: 0,
+          enabled: false,
+        },
+      ],
+    };
+
+    writeFileSync(join(tmpDir, "config", "providers.json"), JSON.stringify(providers, null, 2) + "\n", "utf-8");
+    writeFileSync(join(tmpDir, "config", "backups.json"), JSON.stringify(backups, null, 2) + "\n", "utf-8");
+
+    const session = new SmartHealerSession();
+    await session.run("Provider ID: mock-grid\nError Log: ECONNREFUSED\n", {
+      onTurnStart: () => {},
+      onTurnEnd: () => {},
+    });
+
+    const updated: ProviderRegistryEntry[] = JSON.parse(
+      readFileSync(join(tmpDir, "config", "providers.json"), "utf-8"),
+    );
+    const backup = updated.find((e) => e.id === "mock-grid-backup")!;
+    expect(backup.fieldMapping).toEqual(expectedMapping);
+  });
+
+  it("backup entry has priority = failed entry priority + 1", async () => {
+    tmpDir = mkdtempSync(join(tmpdir(), "healer-test-"));
+    originalCwd = process.cwd();
+    process.chdir(tmpDir);
+    mkdirSync(join(tmpDir, "config"), { recursive: true });
+
+    const providers: ProviderRegistryEntry[] = [
+      {
+        id: "mock-grid",
+        displayName: "Mock Grid Provider",
+        endpoint: "https://grid.example.com/api",
+        authMode: "none",
+        pollIntervalMs: 30000,
+        fieldMapping: { metric: "grid_frequency", value: "freq", unit: "Hz", timestamp: "ts" },
+        priority: 7,
+        enabled: true,
+      },
+    ];
+
+    const backups: Record<string, ProviderRegistryEntry[]> = {
+      grid_frequency: [
+        {
+          id: "mock-grid-backup",
+          displayName: "Backup Grid",
+          endpoint: "https://backup.example.com/api",
+          authMode: "none",
+          pollIntervalMs: 60000,
+          fieldMapping: { metric: "grid_frequency", value: "x", unit: "Hz", timestamp: "ts" },
+          priority: 0,
+          enabled: false,
+        },
+      ],
+    };
+
+    writeFileSync(join(tmpDir, "config", "providers.json"), JSON.stringify(providers, null, 2) + "\n", "utf-8");
+    writeFileSync(join(tmpDir, "config", "backups.json"), JSON.stringify(backups, null, 2) + "\n", "utf-8");
+
+    const session = new SmartHealerSession();
+    await session.run("Provider ID: mock-grid\nError Log: ECONNREFUSED\n", {
+      onTurnStart: () => {},
+      onTurnEnd: () => {},
+    });
+
+    const updated: ProviderRegistryEntry[] = JSON.parse(
+      readFileSync(join(tmpDir, "config", "providers.json"), "utf-8"),
+    );
+    const backup = updated.find((e) => e.id === "mock-grid-backup")!;
+    expect(backup.priority).toBe(8);
+  });
+
+  it("backup entry has authMode set to zeroxyz regardless of original", async () => {
+    tmpDir = mkdtempSync(join(tmpdir(), "healer-test-"));
+    originalCwd = process.cwd();
+    process.chdir(tmpDir);
+    mkdirSync(join(tmpDir, "config"), { recursive: true });
+
+    const providers: ProviderRegistryEntry[] = [
+      {
+        id: "mock-grid",
+        displayName: "Mock Grid Provider",
+        endpoint: "https://grid.example.com/api",
+        authMode: "none",
+        pollIntervalMs: 30000,
+        fieldMapping: { metric: "grid_frequency", value: "freq", unit: "Hz", timestamp: "ts" },
+        priority: 5,
+        enabled: true,
+      },
+    ];
+
+    const backups: Record<string, ProviderRegistryEntry[]> = {
+      grid_frequency: [
+        {
+          id: "mock-grid-backup",
+          displayName: "Backup Grid",
+          endpoint: "https://backup.example.com/api",
+          authMode: "none",
+          pollIntervalMs: 60000,
+          fieldMapping: { metric: "grid_frequency", value: "x", unit: "Hz", timestamp: "ts" },
+          priority: 0,
+          enabled: false,
+        },
+      ],
+    };
+
+    writeFileSync(join(tmpDir, "config", "providers.json"), JSON.stringify(providers, null, 2) + "\n", "utf-8");
+    writeFileSync(join(tmpDir, "config", "backups.json"), JSON.stringify(backups, null, 2) + "\n", "utf-8");
+
+    const session = new SmartHealerSession();
+    await session.run("Provider ID: mock-grid\nError Log: ECONNREFUSED\n", {
+      onTurnStart: () => {},
+      onTurnEnd: () => {},
+    });
+
+    const updated: ProviderRegistryEntry[] = JSON.parse(
+      readFileSync(join(tmpDir, "config", "providers.json"), "utf-8"),
+    );
+    const backup = updated.find((e) => e.id === "mock-grid-backup")!;
+    expect(backup.authMode).toBe("zeroxyz");
+  });
+
+  it("backup entry has enabled set to true", async () => {
+    tmpDir = mkdtempSync(join(tmpdir(), "healer-test-"));
+    originalCwd = process.cwd();
+    process.chdir(tmpDir);
+    mkdirSync(join(tmpDir, "config"), { recursive: true });
+
+    const providers: ProviderRegistryEntry[] = [
+      {
+        id: "mock-grid",
+        displayName: "Mock Grid Provider",
+        endpoint: "https://grid.example.com/api",
+        authMode: "none",
+        pollIntervalMs: 30000,
+        fieldMapping: { metric: "grid_frequency", value: "freq", unit: "Hz", timestamp: "ts" },
+        priority: 5,
+        enabled: true,
+      },
+    ];
+
+    const backups: Record<string, ProviderRegistryEntry[]> = {
+      grid_frequency: [
+        {
+          id: "mock-grid-backup",
+          displayName: "Backup Grid",
+          endpoint: "https://backup.example.com/api",
+          authMode: "none",
+          pollIntervalMs: 60000,
+          fieldMapping: { metric: "grid_frequency", value: "x", unit: "Hz", timestamp: "ts" },
+          priority: 0,
+          enabled: false,
+        },
+      ],
+    };
+
+    writeFileSync(join(tmpDir, "config", "providers.json"), JSON.stringify(providers, null, 2) + "\n", "utf-8");
+    writeFileSync(join(tmpDir, "config", "backups.json"), JSON.stringify(backups, null, 2) + "\n", "utf-8");
+
+    const session = new SmartHealerSession();
+    await session.run("Provider ID: mock-grid\nError Log: ECONNREFUSED\n", {
+      onTurnStart: () => {},
+      onTurnEnd: () => {},
+    });
+
+    const updated: ProviderRegistryEntry[] = JSON.parse(
+      readFileSync(join(tmpDir, "config", "providers.json"), "utf-8"),
+    );
+    const backup = updated.find((e) => e.id === "mock-grid-backup")!;
+    expect(backup.enabled).toBe(true);
+  });
+
+  it("does not add duplicate backup entries", async () => {
+    tmpDir = mkdtempSync(join(tmpdir(), "healer-test-"));
+    originalCwd = process.cwd();
+    process.chdir(tmpDir);
+    mkdirSync(join(tmpDir, "config"), { recursive: true });
+
+    const providers: ProviderRegistryEntry[] = [
+      {
+        id: "mock-grid",
+        displayName: "Mock Grid Provider",
+        endpoint: "https://grid.example.com/api",
+        authMode: "none",
+        pollIntervalMs: 30000,
+        fieldMapping: { metric: "grid_frequency", value: "freq", unit: "Hz", timestamp: "ts" },
+        priority: 5,
+        enabled: true,
+      },
+    ];
+
+    const backups: Record<string, ProviderRegistryEntry[]> = {
+      grid_frequency: [
+        {
+          id: "mock-grid-backup",
+          displayName: "Backup Grid",
+          endpoint: "https://backup.example.com/api",
+          authMode: "none",
+          pollIntervalMs: 60000,
+          fieldMapping: { metric: "grid_frequency", value: "x", unit: "Hz", timestamp: "ts" },
+          priority: 0,
+          enabled: false,
+        },
+      ],
+    };
+
+    writeFileSync(join(tmpDir, "config", "providers.json"), JSON.stringify(providers, null, 2) + "\n", "utf-8");
+    writeFileSync(join(tmpDir, "config", "backups.json"), JSON.stringify(backups, null, 2) + "\n", "utf-8");
+
+    const prompt = "Provider ID: mock-grid\nError Log: ECONNREFUSED\n";
+    const noop = { onTurnStart: () => {}, onTurnEnd: () => {} };
+
+    // First heal: adds the backup
+    await new SmartHealerSession().run(prompt, noop);
+    // Second heal: should skip duplicate
+    await new SmartHealerSession().run(prompt, noop);
+
+    const updated: ProviderRegistryEntry[] = JSON.parse(
+      readFileSync(join(tmpDir, "config", "providers.json"), "utf-8"),
+    );
+    const duplicateEntries = updated.filter((e) => e.id === "mock-grid-backup");
+    expect(duplicateEntries.length).toBe(1);
+  });
+
+  // --- Lifecycle callback order ---
+
+  it("calls lifecycle callbacks in exact order", async () => {
+    tmpDir = mkdtempSync(join(tmpdir(), "healer-test-"));
+    originalCwd = process.cwd();
+    process.chdir(tmpDir);
+    mkdirSync(join(tmpDir, "config"), { recursive: true });
+
+    const providers: ProviderRegistryEntry[] = [
+      {
+        id: "mock-grid",
+        displayName: "Mock Grid Provider",
+        endpoint: "https://grid.example.com/api",
+        authMode: "none",
+        pollIntervalMs: 30000,
+        fieldMapping: { metric: "grid_frequency", value: "freq", unit: "Hz", timestamp: "ts" },
+        priority: 5,
+        enabled: true,
+      },
+    ];
+
+    const backups: Record<string, ProviderRegistryEntry[]> = {
+      grid_frequency: [
+        {
+          id: "mock-grid-backup",
+          displayName: "Backup Grid",
+          endpoint: "https://backup.example.com/api",
+          authMode: "none",
+          pollIntervalMs: 60000,
+          fieldMapping: { metric: "grid_frequency", value: "x", unit: "Hz", timestamp: "ts" },
+          priority: 0,
+          enabled: false,
+        },
+      ],
+    };
+
+    writeFileSync(join(tmpDir, "config", "providers.json"), JSON.stringify(providers, null, 2) + "\n", "utf-8");
+    writeFileSync(join(tmpDir, "config", "backups.json"), JSON.stringify(backups, null, 2) + "\n", "utf-8");
+
+    const session = new SmartHealerSession();
+    const order: string[] = [];
+    await session.run("Provider ID: mock-grid\nError Log: ECONNREFUSED\n", {
+      onTurnStart: (s) => order.push(s),
+      onTurnEnd: () => {},
+    });
+
+    expect(order).toEqual([
+      "analysing",
+      "reading-registry",
+      "discovering-backup",
+      "patching-registry",
+    ]);
+  });
+});
+
+describe("ZeroHealerSession", () => {
+  it("validates a live Zero result before atomically adding the candidate", async () => {
+    const tmpDir = makeTempDir();
+    const originalCwd = process.cwd();
+    process.chdir(tmpDir);
+    try {
+      writeFileSync(resolve(tmpDir, "config", "providers.json"), JSON.stringify([{
+        id: "weather", displayName: "Weather", endpoint: "https://example.com", authMode: "none",
+        pollIntervalMs: 60_000, fieldMapping: { metric: "temperature" }, priority: 1, enabled: true,
+      }]), "utf-8");
+      const runner = {
+        discover: async () => ({ id: "zero-weather", displayName: "Zero Weather", endpoint: "zero://weather", authMode: "zeroxyz" as const,
+          pollIntervalMs: 300_000, fieldMapping: { metric: "temperature", value: "$value", unit: "C", timestamp: "live" }, priority: 2, enabled: true }),
+        fetch: async () => ({ value: 19 }),
+      };
+      const session = new ZeroHealerSession(runner);
+      await session.run("Provider ID: weather\nError Log: timeout", { onTurnStart: () => {}, onTurnEnd: () => {} });
+      const entries = JSON.parse(readFileSync(resolve(tmpDir, "config", "providers.json"), "utf-8"));
+      expect(entries).toHaveLength(2);
+      expect(entries[1].endpoint).toBe("zero://weather");
+    } finally {
+      process.chdir(originalCwd);
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });

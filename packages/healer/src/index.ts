@@ -38,6 +38,9 @@ export interface FailureEvent {
 
 /** Re-export the registry entry shape so consumers need only one import. */
 export type { ProviderRegistryEntry, WsPayload };
+export type { ZeroRunner } from "./zero";
+export { ZeroAgentRunner } from "./zero";
+export { SmartHealerSession, ZeroHealerSession } from "./agent";
 
 export type HealerEventName = "healing" | "restored" | "agent-activity";
 
@@ -60,7 +63,7 @@ function buildAgentPrompt(failure: FailureEvent): string {
     "1. Read the current provider registry from config/providers.json",
     "2. Analyze the error log to determine what failed",
     "3. Search for a backup provider for the same data type via Zero.xyz",
-    "4. Write a new entry to config/providers.json with the backup endpoint,",
+    "4. Write a new enabled entry to config/providers.json with the backup endpoint,",
     "   field mapping, and auth mode \"zeroxyz\"",
     "5. Priority should be 1 below the failed provider (so next poll cycle",
     "   picks it up)",

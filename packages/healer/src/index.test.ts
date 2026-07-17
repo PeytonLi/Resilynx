@@ -134,6 +134,21 @@ describe("Healer — error-log injection", () => {
 
     expect(stubAgent.promptReceived).toContain("1 below");
   });
+
+  it("prompt includes timestamp of the failure", async () => {
+    const iso = "2025-03-15T08:30:00.000Z";
+    const failure = makeFailure({ timestamp: iso });
+    await healer.heal(failure);
+
+    expect(stubAgent.promptReceived).toContain(iso);
+    expect(new Date(failure.timestamp).getTime()).not.toBeNaN();
+  });
+
+  it("prompt instructs backup entry to be enabled", async () => {
+    await healer.heal(makeFailure());
+
+    expect(stubAgent.promptReceived).toContain("enabled");
+  });
 });
 
 describe("Healer — event binding (lifecycle transitions)", () => {
@@ -242,6 +257,39 @@ describe("Healer — WsPayload shape verification", () => {
       // timestamp: string (ISO 8601)
       expect(typeof p.timestamp).toBe("string");
       expect(new Date(p.timestamp).getTime()).not.toBeNaN();
+    }
+  });
+});
+
+describe("Healer — edge cases", () => {
+  it("multiple rapid heal() calls do not interfere", async () => {
+    const stubAgent = new StubAgentSession();
+    const healer = new Healer(stubAgent);
+
+    let completed = 0;
+    healer.on("restored", () => completed++);
+
+    await Promise.all([
+      healer.heal(makeFailure({ providerId: "a" })),
+      healer.heal(makeFailure({ providerId: "b" })),
+    ]);
+
+    expect(completed).toBe(2);
+  });
+
+  it("healing event includes the correct nodeId", async () => {
+    const stubAgent = new StubAgentSession();
+    const healer = new Healer(stubAgent);
+
+    const payloads: WsPayload[] = [];
+    healer.on("healing", (p: WsPayload) => payloads.push(p));
+    healer.on("agent-activity", (p: WsPayload) => payloads.push(p));
+    healer.on("restored", (p: WsPayload) => payloads.push(p));
+
+    await healer.heal(makeFailure());
+
+    for (const p of payloads) {
+      expect(p.nodeId).toBe("healer");
     }
   });
 });

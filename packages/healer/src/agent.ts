@@ -10,9 +10,10 @@
  * never touches the filesystem but still fires every lifecycle callback.
  */
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, renameSync } from "node:fs";
 import { resolve } from "node:path";
 import type { FailureEvent, ProviderRegistryEntry } from "./index";
+import type { ZeroDiscoveryRunner } from "./zero";
 
 // ---------------------------------------------------------------------------
 // Public contract
@@ -42,6 +43,11 @@ export interface AgentSession {
 // ---------------------------------------------------------------------------
 
 const REGISTRY_PATH = resolve(import.meta.dir, "../../../", "config", "providers.json");
+
+function configPath(filename: string): string {
+  const local = resolve("config", filename);
+  return existsSync(local) ? local : resolve(import.meta.dir, "../../../", "config", filename);
+}
 
 /** Approximates what a real agent would do with the prompt instructions. */
 export class SimulatedAgentSession implements AgentSession {
@@ -155,8 +161,8 @@ export class SmartHealerSession implements AgentSession {
   private readonly backupsPath: string;
 
   constructor() {
-    this.registryPath = resolve("config", "providers.json");
-    this.backupsPath = resolve("config", "backups.json");
+    this.registryPath = configPath("providers.json");
+    this.backupsPath = configPath("backups.json");
   }
 
   async run(prompt: string, callbacks: AgentCallbacks): Promise<void> {
@@ -184,6 +190,12 @@ export class SmartHealerSession implements AgentSession {
       return;
     }
     const backup = { ...candidates[0] }; // shallow clone
+
+    // ponytail: skip if backup already registered
+    if (registry.some(e => e.id === backup.id)) {
+      callbacks.onTurnEnd();
+      return;
+    }
 
     // 4. Patch registry
     callbacks.onTurnStart("patching-registry");
@@ -220,5 +232,49 @@ export class SmartHealerSession implements AgentSession {
 
   private writeRegistry(entries: ProviderRegistryEntry[]): void {
     writeFileSync(this.registryPath, JSON.stringify(entries, null, 2) + "\n", "utf-8");
+  }
+}
+
+/** Uses Zero through a read-only agent, then validates the returned live payload before registry mutation. */
+export class ZeroHealerSession implements AgentSession {
+  private readonly registryPath: string;
+
+  constructor(private readonly zero: ZeroDiscoveryRunner, private readonly fallback?: AgentSession) {
+    this.registryPath = configPath("providers.json");
+  }
+
+  async run(prompt: string, callbacks: AgentCallbacks): Promise<void> {
+    callbacks.onTurnStart("analysing");
+    const providerId = prompt.match(/Provider ID:\s*(\S+)/)?.[1];
+    if (!providerId) { callbacks.onTurnEnd(); return; }
+
+    callbacks.onTurnStart("reading-registry");
+    const entries = this.readRegistry();
+    const failed = entries.find((entry) => entry.id === providerId);
+    if (!failed) { callbacks.onTurnEnd(); return; }
+
+    callbacks.onTurnStart("discovering-backup");
+    let candidate: ProviderRegistryEntry;
+    try {
+      candidate = await this.zero.discover(failed);
+      if (entries.some((entry) => entry.id === candidate.id)) { callbacks.onTurnEnd(); return; }
+      callbacks.onTurnStart("validating-backup");
+      await this.zero.fetch(candidate);
+    } catch (error) {
+      if (this.fallback) return this.fallback.run(prompt, callbacks);
+      throw error;
+    }
+
+    callbacks.onTurnStart("patching-registry");
+    entries.push({ ...candidate, priority: failed.priority + 1, enabled: true });
+    const tempPath = `${this.registryPath}.tmp`;
+    writeFileSync(tempPath, JSON.stringify(entries, null, 2) + "\n", "utf-8");
+    renameSync(tempPath, this.registryPath);
+    callbacks.onTurnEnd();
+  }
+
+  private readRegistry(): ProviderRegistryEntry[] {
+    if (!existsSync(this.registryPath)) return [];
+    return JSON.parse(readFileSync(this.registryPath, "utf-8")) as ProviderRegistryEntry[];
   }
 }
