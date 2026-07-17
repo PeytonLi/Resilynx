@@ -1,5 +1,5 @@
 import { PORTS, type NexsetRecord, type WsPayload } from "@resilynx/contracts";
-import { Healer, type FailureEvent } from "@resilynx/healer";
+import { Healer } from "@resilynx/healer";
 import { publish, websocketHandlers } from "./broadcaster";
 import { Store } from "./db";
 import { HealthMonitor } from "./healthMonitor";
@@ -73,11 +73,11 @@ if (import.meta.main) {
     broadcast({ status: "stable", nodeId: providerId, timestamp: new Date().toISOString() });
   });
 
-  healer.on("healing", (failure: FailureEvent) => {
-    broadcast({ status: "healing", nodeId: failure.providerId, timestamp: new Date().toISOString() });
+  healer.on("healing", (payload: WsPayload) => {
+    broadcast(payload);
   });
-  healer.on("restored", (failure: FailureEvent) => {
-    broadcast({ status: "restored", nodeId: failure.providerId, timestamp: new Date().toISOString() });
+  healer.on("restored", (payload: WsPayload) => {
+    broadcast(payload);
   });
   healer.on("agent-activity", (activity: unknown) => {
     const a = (activity ?? {}) as { providerId?: string; agentState?: string; message?: string };

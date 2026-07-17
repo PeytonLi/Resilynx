@@ -81,7 +81,7 @@ export class IngestionEngine extends EventEmitter {
       const res = await this.fetchWithTimeout(this.standardizeUrl, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ providerId: provider.id, payload, fieldMapping: provider.fieldMapping }),
+        body: JSON.stringify({ providerId: provider.id, metric: provider.id, rawPayload: payload, fieldMapping: provider.fieldMapping }),
       });
       if (!res.ok) {
         console.warn(`[ingestion] standardization service returned ${res.status}; skipping ${provider.id} this cycle`);

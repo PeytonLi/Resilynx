@@ -1,9 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { EventFeed } from "@/components/EventFeed";
 import { providers } from "@/lib/providers";
+
+const NetworkCanvas = dynamic(
+  () => import("@/components/NetworkCanvas").then((mod) => mod.NetworkCanvas),
+  { ssr: false }
+);
 
 export default function Home() {
   const { networkStatus, events, connected } = useWebSocket();

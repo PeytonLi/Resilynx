@@ -9,3 +9,6 @@ __pycache__/
 .env
 .env.local
 *.log
+.worktrees/
+.tokensave/
+bun.lock
