@@ -628,10 +628,8 @@ button:focus-visible {
 
 .architecture-flow > div:nth-child(2) > div:last-child > div {
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-start;
   gap: 1.5rem;
-  width: 100%;
 }
 
 /* Provider cards */

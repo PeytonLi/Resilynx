@@ -258,7 +258,7 @@ export function ArchitectureFlow() {
 
         {/* ── ARCHITECTURE FLOW ── */}
       <div className="flex-1 flex items-start justify-center px-8 py-4 min-h-0 overflow-auto">
-        <div className="flex flex-wrap items-start gap-6 w-full max-w-4xl">
+        <div className="flex items-start gap-6 w-full" style={{ minWidth: 900 }}>
           {/* ── LEFT: Provider column ── */}
           <div className="flex flex-col gap-3 shrink-0" style={{ width: 240 }}>
             <div className="flex items-center gap-2 mb-1 px-1">
@@ -340,7 +340,7 @@ export function ArchitectureFlow() {
           </div>
 
           {/* ── Flow arrow → right ── */}
-          <div className="flex items-center shrink-0" style={{ paddingTop: 24 }}>
+          <div className="flex items-center justify-center shrink-0" style={{ alignSelf: "stretch" }}>
             <div className="flex flex-col items-center gap-1">
               <FlowArrow active />
               <span className="text-[8px] text-[#60748c] -mt-1" style={{ fontFamily: "'Fira Code', monospace" }}>DATA</span>
