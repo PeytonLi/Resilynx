@@ -282,7 +282,7 @@ export function ArchitectureFlow() {
           </div>
 
           {/* ── CENTER: Nexla Core ── */}
-          <div className="flex flex-col gap-4 shrink-0" style={{ width: 280, paddingTop: 28 }}>
+          <div className="flex flex-col gap-4" style={{ width: 280, alignSelf: "stretch", justifyContent: "center" }}>
             <div className="rounded-xl overflow-hidden" style={{ background: "rgba(57,214,189,0.05)", border: "1px solid rgba(57,214,189,0.18)" }}>
               <div className="px-4 py-3 flex items-center gap-2.5 border-b" style={{ borderColor: "rgba(57,214,189,0.1)", background: "rgba(0,0,0,0.2)" }}>
                 <Server size={14} style={{ color: "#39d6bd" }} />
@@ -326,7 +326,7 @@ export function ArchitectureFlow() {
           </div>
 
           {/* ── Flow arrow → right ── */}
-          <div className="flex items-center justify-center shrink-0" style={{ alignSelf: "stretch" }}>
+          <div className="flex shrink-0" style={{ alignSelf: "stretch", justifyContent: "flex-start", paddingTop: 120 }}>
             <div className="flex flex-col items-center gap-1">
               <FlowArrow active />
               <span className="text-[8px] text-[#60748c] -mt-1" style={{ fontFamily: "'Fira Code', monospace" }}>DATA</span>
