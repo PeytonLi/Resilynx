@@ -258,26 +258,24 @@ export function ArchitectureFlow() {
 
         {/* ── ARCHITECTURE FLOW ── */}
       <div className="flex-1 flex items-start justify-center px-8 py-4 min-h-0 overflow-auto">
-        <div className="flex items-start gap-6 w-full" style={{ minWidth: 900 }}>
-          {/* ── LEFT: Provider column ── */}
-          <div className="flex flex-col gap-3 shrink-0" style={{ width: 240 }}>
+        <div className="flex items-start gap-6" style={{ minWidth: 900 }}>
+          {/* ── LEFT: Provider + Arrow rows ── */}
+          <div className="flex flex-col gap-3 shrink-0" style={{ width: 300 }}>
             <div className="flex items-center gap-2 mb-1 px-1">
               <Globe size={13} style={{ color: "#5de8ff" }} />
               <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#94a3b8]">Providers</span>
             </div>
-            {PROVIDERS.map((def) => (
-              <ProviderCard key={def.id} def={def} state={networkStatus.get(def.id)} />
-            ))}
-          </div>
-
-          {/* ── Flow arrows ── */}
-          <div className="flex flex-col gap-3 justify-center shrink-0" style={{ paddingTop: 24 }}>
             {PROVIDERS.map((def) => {
               const state = networkStatus.get(def.id);
               const active = !state || state.status === "stable" || state.status === "restored";
               return (
-                <div key={def.id} style={{ height: 104 }}>
-                  <FlowArrow active={active} />
+                <div key={def.id} className="flex items-center gap-2">
+                  <div style={{ width: 240, flexShrink: 0 }}>
+                    <ProviderCard def={def} state={state} />
+                  </div>
+                  <div className="flex items-center justify-center shrink-0" style={{ width: 48 }}>
+                    <FlowArrow active={active} />
+                  </div>
                 </div>
               );
             })}
@@ -295,32 +293,20 @@ export function ArchitectureFlow() {
               <div className="p-4 space-y-3">
                 <div>
                   <div className="text-[10px] text-[#64748b] mb-0.5" style={{ fontFamily: "'Fira Code', monospace" }}>STANDARDIZATION</div>
-                  <div className="text-[11px] text-[#b9d9f0] leading-relaxed">
-                    FastAPI · $ prefix dot-path resolver
-                  </div>
-                  <div className="text-[9px] text-[#60748c] mt-0.5" style={{ fontFamily: "'Fira Code', monospace" }}>
-                    Raw payloads → unified NexsetRecords
-                  </div>
+                  <div className="text-[11px] text-[#b9d9f0] leading-relaxed">FastAPI · $ prefix dot-path resolver</div>
+                  <div className="text-[9px] text-[#60748c] mt-0.5" style={{ fontFamily: "'Fira Code', monospace" }}>Raw payloads → unified NexsetRecords</div>
                 </div>
                 <div>
                   <div className="text-[10px] text-[#64748b] mb-0.5" style={{ fontFamily: "'Fira Code', monospace" }}>NEXLA CLOUD</div>
-                  <div className="text-[11px] text-[#b9d9f0] leading-relaxed">
-                    nexla-sdk v1.0.8 · schema validation
-                  </div>
-                  <div className="text-[9px] text-[#60748c] mt-0.5" style={{ fontFamily: "'Fira Code', monospace" }}>
-                    dataops.nexla.io
-                  </div>
+                  <div className="text-[11px] text-[#b9d9f0] leading-relaxed">nexla-sdk v1.0.8 · schema validation</div>
+                  <div className="text-[9px] text-[#60748c] mt-0.5" style={{ fontFamily: "'Fira Code', monospace" }}>dataops.nexla.io</div>
                 </div>
               </div>
             </div>
-
-            {/* Healer */}
             <div className="rounded-xl overflow-hidden" style={{ background: "rgba(170,150,255,0.05)", border: "1px solid rgba(170,150,255,0.18)" }}>
               <div className="px-4 py-3 flex items-center gap-2.5 border-b" style={{ borderColor: "rgba(170,150,255,0.1)", background: "rgba(0,0,0,0.2)" }}>
                 <Shield size={14} style={{ color: "#aa96ff" }} />
-                <span className="text-[11px] font-semibold text-[#aa96ff] uppercase tracking-[0.06em]" style={{ fontFamily: "'Fira Code', monospace" }}>
-                  Healing Orchestrator
-                </span>
+                <span className="text-[11px] font-semibold text-[#aa96ff] uppercase tracking-[0.06em]" style={{ fontFamily: "'Fira Code', monospace" }}>Healing Orchestrator</span>
               </div>
               <div className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
@@ -352,51 +338,31 @@ export function ArchitectureFlow() {
             <div className="rounded-xl overflow-hidden" style={{ background: "rgba(93,232,255,0.05)", border: "1px solid rgba(93,232,255,0.18)" }}>
               <div className="px-4 py-3 flex items-center gap-2.5 border-b" style={{ borderColor: "rgba(93,232,255,0.1)", background: "rgba(0,0,0,0.2)" }}>
                 <Database size={14} style={{ color: "#5de8ff" }} />
-                <span className="text-[11px] font-semibold text-[#5de8ff] uppercase tracking-[0.06em]" style={{ fontFamily: "'Fira Code', monospace" }}>
-                  SQLite Store
-                </span>
+                <span className="text-[11px] font-semibold text-[#5de8ff] uppercase tracking-[0.06em]" style={{ fontFamily: "'Fira Code', monospace" }}>SQLite Store</span>
               </div>
               <div className="p-4">
-                <div className="text-[10px] text-[#94a3b8] leading-relaxed">
-                  Bun:sqlite · readings + events
-                </div>
-                <div className="text-[9px] text-[#60748c] mt-1" style={{ fontFamily: "'Fira Code', monospace" }}>
-                  apps/backend/data/
-                </div>
+                <div className="text-[10px] text-[#94a3b8] leading-relaxed">Bun:sqlite · readings + events</div>
+                <div className="text-[9px] text-[#60748c] mt-1" style={{ fontFamily: "'Fira Code', monospace" }}>apps/backend/data/</div>
               </div>
             </div>
-
             <div className="rounded-xl overflow-hidden" style={{ background: "rgba(255,186,92,0.05)", border: "1px solid rgba(255,186,92,0.18)" }}>
               <div className="px-4 py-3 flex items-center gap-2.5 border-b" style={{ borderColor: "rgba(255,186,92,0.1)", background: "rgba(0,0,0,0.2)" }}>
                 <Wifi size={14} style={{ color: "#ffba5c" }} />
-                <span className="text-[11px] font-semibold text-[#ffba5c] uppercase tracking-[0.06em]" style={{ fontFamily: "'Fira Code', monospace" }}>
-                  WebSocket
-                </span>
+                <span className="text-[11px] font-semibold text-[#ffba5c] uppercase tracking-[0.06em]" style={{ fontFamily: "'Fira Code', monospace" }}>WebSocket</span>
               </div>
               <div className="p-4">
-                <div className="text-[10px] text-[#94a3b8] leading-relaxed">
-                  Bun.serve · aegis-events
-                </div>
-                <div className="text-[9px] text-[#60748c] mt-1" style={{ fontFamily: "'Fira Code', monospace" }}>
-                  ws://localhost:8080
-                </div>
+                <div className="text-[10px] text-[#94a3b8] leading-relaxed">Bun.serve · aegis-events</div>
+                <div className="text-[9px] text-[#60748c] mt-1" style={{ fontFamily: "'Fira Code', monospace" }}>ws://localhost:8080</div>
               </div>
             </div>
-
             <div className="rounded-xl overflow-hidden" style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.18)" }}>
               <div className="px-4 py-3 flex items-center gap-2.5 border-b" style={{ borderColor: "rgba(34,197,94,0.1)", background: "rgba(0,0,0,0.2)" }}>
                 <Sparkles size={14} style={{ color: "#22c55e" }} />
-                <span className="text-[11px] font-semibold text-[#22c55e] uppercase tracking-[0.06em]" style={{ fontFamily: "'Fira Code', monospace" }}>
-                  Output
-                </span>
+                <span className="text-[11px] font-semibold text-[#22c55e] uppercase tracking-[0.06em]" style={{ fontFamily: "'Fira Code', monospace" }}>Output</span>
               </div>
               <div className="p-4">
-                <div className="text-[10px] text-[#94a3b8] leading-relaxed">
-                  Next.js + 3D topology graph
-                </div>
-                <div className="text-[9px] text-[#60748c] mt-1" style={{ fontFamily: "'Fira Code', monospace" }}>
-                  localhost:3000
-                </div>
+                <div className="text-[10px] text-[#94a3b8] leading-relaxed">Next.js + 3D topology graph</div>
+                <div className="text-[9px] text-[#60748c] mt-1" style={{ fontFamily: "'Fira Code', monospace" }}>localhost:3000</div>
               </div>
             </div>
           </div>
