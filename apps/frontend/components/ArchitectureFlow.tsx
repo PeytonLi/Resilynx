@@ -282,7 +282,7 @@ export function ArchitectureFlow() {
           </div>
 
           {/* ── CENTER: Nexla Core ── */}
-          <div className="flex flex-col gap-4 shrink-0" style={{ width: 280 }}>
+          <div className="flex flex-col gap-4 shrink-0" style={{ width: 280, paddingTop: 28 }}>
             <div className="rounded-xl overflow-hidden" style={{ background: "rgba(57,214,189,0.05)", border: "1px solid rgba(57,214,189,0.18)" }}>
               <div className="px-4 py-3 flex items-center gap-2.5 border-b" style={{ borderColor: "rgba(57,214,189,0.1)", background: "rgba(0,0,0,0.2)" }}>
                 <Server size={14} style={{ color: "#39d6bd" }} />
@@ -334,7 +334,7 @@ export function ArchitectureFlow() {
           </div>
 
           {/* ── RIGHT: Output ── */}
-          <div className="flex flex-col gap-4 shrink-0" style={{ width: 220 }}>
+          <div className="flex flex-col gap-4 shrink-0" style={{ width: 220, paddingTop: 28 }}>
             <div className="rounded-xl overflow-hidden" style={{ background: "rgba(93,232,255,0.05)", border: "1px solid rgba(93,232,255,0.18)" }}>
               <div className="px-4 py-3 flex items-center gap-2.5 border-b" style={{ borderColor: "rgba(93,232,255,0.1)", background: "rgba(0,0,0,0.2)" }}>
                 <Database size={14} style={{ color: "#5de8ff" }} />
